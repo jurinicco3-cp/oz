@@ -4,59 +4,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>アスペクト検出漏れ検証</title>
+<title>アスペクト特殊ケース検証</title>
 <style>
   body {
     font-family: sans-serif;
-    margin: 24px;
+    margin: 22px;
     background: #101827;
     color: #edf2f7;
     line-height: 1.6;
   }
-  h1 { color: #e9c77b; font-size: 24px; }
-  h2 { color: #e9c77b; font-size: 18px; margin-top: 28px; }
+  h1 { color: #e9c77b; font-size: 23px; }
+  h2 { color: #e9c77b; font-size: 17px; margin-top: 28px; }
   button {
     padding: 12px 22px;
     border: 0;
     border-radius: 8px;
     background: #d6ae5c;
     color: #172033;
-    font-weight: bold;
-    cursor: pointer;
     font-size: 16px;
+    font-weight: bold;
   }
+  button:disabled { opacity: .5; }
   pre {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     background: #1d293b;
-    padding: 16px;
+    padding: 15px;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12px;
   }
   .note { color: #b8c5d6; font-size: 13px; }
-  .ok { color: #8de0ae; }
-  .warn { color: #f4c66d; }
-  .bad { color: #ff8585; }
 </style>
 </head>
 <body>
 
-<h1>アスペクト検出漏れ検証エンジン</h1>
+<h1>アスペクト特殊ケース検証エンジン</h1>
 
 <p class="note">
-15分・5分・1分間隔の検出結果を比較し、
-検出漏れ・時刻差・角度誤差・重複を検証します。
+接線・ニアミス、複数回通過、期間境界、留の時刻、
+アスペクト成立前後の角度変化を検証します。
 </p>
 
 <p>
-  検証期間：
-  <strong>2026年11月1日〜12月1日（UTC）</strong>
+検証期間：2026年11月1日〜12月1日（UTC）<br>
+基本走査間隔：1分
 </p>
 
-<button id="runButton" onclick="runTest()">検証スタート</button>
+<button id="runButton" onclick="runTest()">特殊ケース検証スタート</button>
 
 <h2>検証結果</h2>
-<pre id="output">検証開始ボタンを押してください。</pre>
+<pre id="output">ボタンを押すと検証を開始します。</pre>
 
 <script src="../astronomy/astronomy.browser.min.js"></script>
 
@@ -68,32 +65,28 @@
 // ======================================
 
 const START = new Date("2026-11-01T00:00:00Z");
-const END   = new Date("2026-12-01T00:00:00Z");
+const END = new Date("2026-12-01T00:00:00Z");
 
 const BODIES = [
-  "Sun",
-  "Mercury",
-  "Venus",
-  "Mars",
-  "Jupiter",
-  "Saturn",
-  "Uranus",
-  "Neptune",
-  "Pluto"
+  "Sun", "Mercury", "Venus", "Mars",
+  "Jupiter", "Saturn", "Uranus",
+  "Neptune", "Pluto"
 ];
 
 const ASPECTS = [0, 60, 90, 120, 180];
 
-const STEPS = [
-  { label: "15分間隔", minutes: 15 },
-  { label: "5分間隔", minutes: 5 },
-  { label: "1分間隔", minutes: 1 }
-];
+const STEP_MS = 60 * 1000;
+
+// 接線・ニアミスとして報告する角度誤差
+const NEAR_MISS_LIMIT = 0.05;
+
+// 成立判定の角度許容誤差
+const ANGLE_TOLERANCE = 0.001;
 
 const output = document.getElementById("output");
 
 // ======================================
-// 基本角度関数
+// 基本関数
 // ======================================
 
 function normalize(angle) {
@@ -122,19 +115,41 @@ function getLongitude(body, date) {
   return Astronomy.Ecliptic(vector).elon;
 }
 
-// 月と対象天体の相対黄経
-function getRelativeLongitude(body, date) {
-  const moon = getLongitude("Moon", date);
-  const planet = getLongitude(body, date);
-  return normalize(moon - planet);
+function getRelative(body, date) {
+  return normalize(
+    getLongitude("Moon", date) -
+    getLongitude(body, date)
+  );
+}
+
+function angularDistanceToAspect(relative) {
+  const separation = Math.abs(signedDiff(relative, 0));
+
+  return Math.min(
+    ...ASPECTS.map(a => Math.abs(separation - a))
+  );
+}
+
+function nearestAspect(relative) {
+  const separation = Math.abs(signedDiff(relative, 0));
+
+  return ASPECTS.reduce((best, current) =>
+    Math.abs(separation - current) <
+    Math.abs(separation - best)
+      ? current
+      : best
+  , ASPECTS[0]);
+}
+
+function formatDate(time) {
+  return new Date(time).toISOString();
 }
 
 // ======================================
-// アスペクト判定用ターゲット
+// アスペクトターゲット生成
 // ======================================
 
-// 例：60度の場合は60度方向と300度方向の両方を検出
-function getTargets() {
+function getTargetBases() {
   const targets = [];
 
   for (const aspect of ASPECTS) {
@@ -145,120 +160,45 @@ function getTargets() {
     }
   }
 
-  return [...new Set(targets)].sort((a, b) => a - b);
+  return [...new Set(targets)];
 }
 
-const TARGETS = getTargets();
+const TARGETS = getTargetBases();
 
 // ======================================
-// 1つの区間内でアスペクトを検出
+// 二分探索：アスペクト成立時刻
 // ======================================
 
-function scanAspectEvents(stepMinutes) {
-  const stepMs = stepMinutes * 60 * 1000;
-  const events = [];
-
-  for (const body of BODIES) {
-    let t0 = START.getTime();
-    const endMs = END.getTime();
-
-    let date0 = new Date(t0);
-    let r0 = getRelativeLongitude(body, date0);
-    let unwrapped0 = r0;
-
-    while (t0 < endMs) {
-      const t1 = Math.min(t0 + stepMs, endMs);
-      const date1 = new Date(t1);
-      const r1 = getRelativeLongitude(body, date1);
-
-      // 相対角度を連続した値に展開する
-      const delta = signedDiff(r1, r0);
-      const unwrapped1 = unwrapped0 + delta;
-
-      const low = Math.min(unwrapped0, unwrapped1);
-      const high = Math.max(unwrapped0, unwrapped1);
-
-      // この区間を通過するアスペクト角を調べる
-      for (let k = Math.floor((low - 360) / 360);
-           k <= Math.ceil((high + 360) / 360);
-           k++) {
-
-        for (const targetBase of TARGETS) {
-          const target = targetBase + 360 * k;
-
-          // 区間内にターゲットが存在するか
-          const crosses =
-            (unwrapped0 < target && unwrapped1 >= target) ||
-            (unwrapped0 > target && unwrapped1 <= target);
-
-          if (!crosses) continue;
-
-          // 二分探索で正確な時刻を求める
-          const rootTime = findRoot(
-            body,
-            t0,
-            t1,
-            r0,
-            unwrapped0,
-            target
-          );
-
-          const aspect = Math.min(
-            targetBase,
-            360 - targetBase
-          );
-
-          events.push({
-            body,
-            aspect,
-            timestamp: rootTime
-          });
-        }
-      }
-
-      t0 = t1;
-      r0 = r1;
-      unwrapped0 = unwrapped1;
-    }
-  }
-
-  return removeDuplicates(events);
-}
-
-// ======================================
-// 二分探索
-// ======================================
-
-function findRoot(
+function findAspectRoot(
   body,
-  leftTime,
-  rightTime,
-  leftRelative,
-  leftUnwrapped,
+  t0,
+  t1,
+  raw0,
+  unwrapped0,
   target
 ) {
-  let lo = leftTime;
-  let hi = rightTime;
+  let lo = t0;
+  let hi = t1;
 
-  function valueAt(time) {
-    const relative = getRelativeLongitude(
-      body,
-      new Date(time)
-    );
-
-    return leftUnwrapped +
-      signedDiff(relative, leftRelative) -
-      target;
-  }
-
-  let flo = valueAt(lo);
+  let flo = unwrapped0 - target;
 
   for (let i = 0; i < 45; i++) {
     const mid = (lo + hi) / 2;
-    const fm = valueAt(mid);
 
-    if ((flo <= 0 && fm >= 0) ||
-        (flo >= 0 && fm <= 0)) {
+    const rawMid = getRelative(
+      body,
+      new Date(mid)
+    );
+
+    const unwrappedMid =
+      unwrapped0 + signedDiff(rawMid, raw0);
+
+    const fm = unwrappedMid - target;
+
+    if (
+      (flo <= 0 && fm >= 0) ||
+      (flo >= 0 && fm <= 0)
+    ) {
       hi = mid;
     } else {
       lo = mid;
@@ -272,13 +212,73 @@ function findRoot(
 }
 
 // ======================================
-// 重複イベントの除去
+// 黄金分割探索：極値の時刻
 // ======================================
 
-function removeDuplicates(events) {
-  events.sort((a, b) =>
-    a.timestamp - b.timestamp
-  );
+function goldenExtremum(
+  body,
+  left,
+  right,
+  anchorTime,
+  anchorRaw,
+  anchorUnwrapped,
+  mode
+) {
+  const ratio = (Math.sqrt(5) - 1) / 2;
+
+  function valueAt(time) {
+    const raw = getRelative(body, new Date(time));
+
+    return anchorUnwrapped +
+      signedDiff(raw, anchorRaw);
+  }
+
+  function score(time) {
+    const value = valueAt(time);
+    return mode === "min" ? value : -value;
+  }
+
+  let a = left;
+  let b = right;
+
+  let c = b - ratio * (b - a);
+  let d = a + ratio * (b - a);
+
+  let fc = score(c);
+  let fd = score(d);
+
+  for (let i = 0; i < 45; i++) {
+    if (fc < fd) {
+      b = d;
+      d = c;
+      fd = fc;
+      c = b - ratio * (b - a);
+      fc = score(c);
+    } else {
+      a = c;
+      c = d;
+      fc = fd;
+      d = a + ratio * (b - a);
+      fd = score(d);
+    }
+
+    if (b - a < 100) break;
+  }
+
+  const time = (a + b) / 2;
+
+  return {
+    timestamp: time,
+    value: valueAt(time)
+  };
+}
+
+// ======================================
+// イベント重複除去
+// ======================================
+
+function deduplicate(events, toleranceMs = 2000) {
+  events.sort((a, b) => a.timestamp - b.timestamp);
 
   const result = [];
 
@@ -286,9 +286,8 @@ function removeDuplicates(events) {
     const duplicate = result.some(existing =>
       existing.body === event.body &&
       existing.aspect === event.aspect &&
-      Math.abs(
-        existing.timestamp - event.timestamp
-      ) < 2000
+      Math.abs(existing.timestamp - event.timestamp) <
+        toleranceMs
     );
 
     if (!duplicate) result.push(event);
@@ -298,312 +297,580 @@ function removeDuplicates(events) {
 }
 
 // ======================================
-// 検出結果の照合
+// 本体：1分間隔のデータを作成
 // ======================================
 
-function compareEvents(reference, candidate) {
-  const used = new Set();
-  const missing = [];
-  const extra = [];
+function buildSamples(body) {
+  const samples = [];
 
-  for (const ref of reference) {
-    let bestIndex = -1;
-    let bestDiff = Infinity;
+  let previousRaw = null;
+  let unwrapped = null;
 
-    candidate.forEach((item, index) => {
-      if (used.has(index)) return;
+  for (
+    let time = START.getTime();
+    time <= END.getTime();
+    time += STEP_MS
+  ) {
+    const date = new Date(time);
+    const raw = getRelative(body, date);
 
-      if (
-        item.body !== ref.body ||
-        item.aspect !== ref.aspect
-      ) return;
+    if (previousRaw === null) {
+      unwrapped = raw;
+    } else {
+      unwrapped += signedDiff(raw, previousRaw);
+    }
 
-      const diff = Math.abs(
-        item.timestamp - ref.timestamp
-      );
-
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestIndex = index;
-      }
+    samples.push({
+      time,
+      raw,
+      unwrapped
     });
 
-    if (bestIndex >= 0 && bestDiff <= 120000) {
-      used.add(bestIndex);
-    } else {
-      missing.push(ref);
-    }
+    previousRaw = raw;
   }
 
-  candidate.forEach((item, index) => {
-    if (!used.has(index)) extra.push(item);
-  });
+  if (samples[samples.length - 1].time < END.getTime()) {
+    const time = END.getTime();
+    const raw = getRelative(body, new Date(time));
 
-  return { missing, extra };
+    unwrapped += signedDiff(raw, previousRaw);
+
+    samples.push({ time, raw, unwrapped });
+  }
+
+  return samples;
 }
 
 // ======================================
-// 角度誤差検証
+// 通常のアスペクト通過検出
 // ======================================
 
-function validateAngles(events) {
-  let passed = 0;
-  let failed = 0;
-  let maxError = 0;
-  const failures = [];
+function detectCrossings(body, samples) {
+  const events = [];
+
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1];
+    const b = samples[i];
+
+    const low = Math.min(a.unwrapped, b.unwrapped);
+    const high = Math.max(a.unwrapped, b.unwrapped);
+
+    for (
+      let k = Math.floor((low - 360) / 360) - 1;
+      k <= Math.ceil((high + 360) / 360) + 1;
+      k++
+    ) {
+      for (const base of TARGETS) {
+        const target = base + 360 * k;
+
+        const crosses =
+          (a.unwrapped < target && b.unwrapped >= target) ||
+          (a.unwrapped > target && b.unwrapped <= target);
+
+        if (!crosses) continue;
+
+        const timestamp = findAspectRoot(
+          body,
+          a.time,
+          b.time,
+          a.raw,
+          a.unwrapped,
+          target
+        );
+
+        events.push({
+          body,
+          aspect: Math.min(base, 360 - base),
+          timestamp,
+          method: "crossing"
+        });
+      }
+    }
+  }
+
+  return deduplicate(events);
+}
+
+// ======================================
+// 接線・ニアミス検出
+// ======================================
+
+function detectTangencies(body, samples) {
+  const results = [];
+
+  for (let i = 1; i < samples.length - 1; i++) {
+    const a = samples[i - 1];
+    const b = samples[i];
+    const c = samples[i + 1];
+
+    const slope1 = b.unwrapped - a.unwrapped;
+    const slope2 = c.unwrapped - b.unwrapped;
+
+    const isMinimum = slope1 < 0 && slope2 >= 0;
+    const isMaximum = slope1 > 0 && slope2 <= 0;
+
+    if (!isMinimum && !isMaximum) continue;
+
+    const extremum = goldenExtremum(
+      body,
+      a.time,
+      c.time,
+      b.time,
+      b.raw,
+      b.unwrapped,
+      isMinimum ? "min" : "max"
+    );
+
+    const relative = getRelative(
+      body,
+      new Date(extremum.timestamp)
+    );
+
+    const error = angularDistanceToAspect(relative);
+
+    if (error > NEAR_MISS_LIMIT) continue;
+
+    const aspect = nearestAspect(relative);
+
+    // 通常の通過イベントとほぼ同時刻なら接線候補から除外
+    results.push({
+      body,
+      aspect,
+      timestamp: extremum.timestamp,
+      error,
+      exactTouch: error <= ANGLE_TOLERANCE,
+      type: error <= ANGLE_TOLERANCE
+        ? "接線成立候補"
+        : "ニアミス候補"
+    });
+  }
+
+  return deduplicate(results, 5000);
+}
+
+// ======================================
+// 逆行などによる複数回通過の確認
+// ======================================
+
+function findRepeatedPassages(events) {
+  const grouped = {};
 
   for (const event of events) {
-    const date = new Date(event.timestamp);
+    const key = `${event.body}|${event.aspect}`;
 
-    const relative = getRelativeLongitude(
-      event.body,
-      date
-    );
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(event);
+  }
 
-    const separation = Math.abs(
-      signedDiff(relative, 0)
-    );
+  const repeated = [];
 
-    let error = Infinity;
-
-    for (const aspect of ASPECTS) {
-      error = Math.min(
-        error,
-        Math.abs(separation - aspect)
-      );
-    }
-
-    maxError = Math.max(maxError, error);
-
-    if (error <= 0.001) {
-      passed++;
-    } else {
-      failed++;
-      failures.push({
-        ...event,
-        error
+  for (const [key, items] of Object.entries(grouped)) {
+    if (items.length >= 2) {
+      repeated.push({
+        key,
+        count: items.length,
+        events: items
       });
     }
   }
 
-  return {
-    passed,
-    failed,
-    maxError,
-    failures
-  };
+  return repeated;
 }
 
 // ======================================
-// 逆行・順行の切り替わり確認
+// 開始・終了境界の確認
 // ======================================
 
-function checkDirectionChanges() {
-  const changes = [];
-
-  const intervalMs = 6 * 60 * 60 * 1000;
+function checkBoundaries() {
+  const results = [];
 
   for (const body of BODIES) {
-    let previousTime = START.getTime();
-    let previousLongitude = getLongitude(
-      body,
-      new Date(previousTime)
-    );
-
-    let previousDirection = 0;
-
-    for (
-      let time = previousTime + intervalMs;
-      time <= END.getTime();
-      time += intervalMs
-    ) {
-      const longitude = getLongitude(
+    for (const time of [
+      START.getTime(),
+      END.getTime()
+    ]) {
+      const relative = getRelative(
         body,
         new Date(time)
       );
 
-      const delta = signedDiff(
-        longitude,
-        previousLongitude
-      );
+      const error = angularDistanceToAspect(relative);
 
-      const direction =
-        delta > 0.000001 ? 1 :
-        delta < -0.000001 ? -1 : 0;
-
-      if (
-        direction !== 0 &&
-        previousDirection !== 0 &&
-        direction !== previousDirection
-      ) {
-        changes.push({
+      if (error <= NEAR_MISS_LIMIT) {
+        results.push({
           body,
           timestamp: time,
-          from: previousDirection > 0 ? "順行" : "逆行",
-          to: direction > 0 ? "順行" : "逆行"
+          aspect: nearestAspect(relative),
+          error
         });
       }
-
-      if (direction !== 0) {
-        previousDirection = direction;
-      }
-
-      previousLongitude = longitude;
     }
   }
 
-  return changes;
+  return results;
+}
+
+// ======================================
+// 天体の留の時刻を検出
+// ======================================
+
+// 中央差分による黄経速度の近似値（度/日）
+function getLongitudeSpeed(body, time) {
+  const half = 5 * 60 * 1000;
+
+  const before = getLongitude(
+    body,
+    new Date(time - half)
+  );
+
+  const after = getLongitude(
+    body,
+    new Date(time + half)
+  );
+
+  return signedDiff(after, before) /
+    (2 * half / 86400000);
+}
+
+function refineStation(body, left, right) {
+  let lo = left;
+  let hi = right;
+  let flo = getLongitudeSpeed(body, lo);
+
+  for (let i = 0; i < 45; i++) {
+    const mid = (lo + hi) / 2;
+    const fm = getLongitudeSpeed(body, mid);
+
+    if (
+      (flo <= 0 && fm >= 0) ||
+      (flo >= 0 && fm <= 0)
+    ) {
+      hi = mid;
+    } else {
+      lo = mid;
+      flo = fm;
+    }
+
+    if (hi - lo < 1000) break;
+  }
+
+  return (lo + hi) / 2;
+}
+
+function detectStations() {
+  const results = [];
+  const scanStep = 60 * 60 * 1000;
+
+  for (const body of BODIES) {
+    let previousTime = START.getTime();
+    let previousSpeed = getLongitudeSpeed(
+      body,
+      previousTime
+    );
+
+    for (
+      let time = previousTime + scanStep;
+      time <= END.getTime();
+      time += scanStep
+    ) {
+      const speed = getLongitudeSpeed(body, time);
+
+      const changed =
+        (previousSpeed < 0 && speed >= 0) ||
+        (previousSpeed > 0 && speed <= 0);
+
+      if (changed) {
+        const stationTime = refineStation(
+          body,
+          previousTime,
+          time
+        );
+
+        const beforeSpeed = getLongitudeSpeed(
+          body,
+          stationTime - 60 * 60 * 1000
+        );
+
+        const afterSpeed = getLongitudeSpeed(
+          body,
+          stationTime + 60 * 60 * 1000
+        );
+
+        results.push({
+          body,
+          timestamp: stationTime,
+          from: beforeSpeed < 0 ? "逆行" : "順行",
+          to: afterSpeed < 0 ? "逆行" : "順行",
+          speedAtStation: getLongitudeSpeed(
+            body,
+            stationTime
+          )
+        });
+      }
+
+      previousTime = time;
+      previousSpeed = speed;
+    }
+  }
+
+  return results;
+}
+
+// ======================================
+// 成立時刻の前後確認
+// ======================================
+
+function validateEventSides(events) {
+  const results = [];
+
+  for (const event of events) {
+    const beforeTime = event.timestamp - 60000;
+    const afterTime = event.timestamp + 60000;
+
+    const exactRelative = getRelative(
+      event.body,
+      new Date(event.timestamp)
+    );
+
+    const beforeRelative = getRelative(
+      event.body,
+      new Date(beforeTime)
+    );
+
+    const afterRelative = getRelative(
+      event.body,
+      new Date(afterTime)
+    );
+
+    const exactError = angularDistanceToAspect(
+      exactRelative
+    );
+
+    const beforeError = angularDistanceToAspect(
+      beforeRelative
+    );
+
+    const afterError = angularDistanceToAspect(
+      afterRelative
+    );
+
+    const beforeDelta = signedDiff(
+      beforeRelative,
+      exactRelative
+    );
+
+    const afterDelta = signedDiff(
+      afterRelative,
+      exactRelative
+    );
+
+    results.push({
+      ...event,
+      exactError,
+      beforeError,
+      afterError,
+      beforeDelta,
+      afterDelta,
+      pass: exactError <= ANGLE_TOLERANCE
+    });
+  }
+
+  return results;
 }
 
 // ======================================
 // 表示用
 // ======================================
 
-function formatDate(timestamp) {
-  return new Date(timestamp).toISOString();
-}
-
-function describeEvents(events, limit = 15) {
-  if (events.length === 0) return "なし";
+function formatEvents(events, limit = 20) {
+  if (!events.length) return "なし";
 
   return events.slice(0, limit).map(event =>
-    `${event.body} ${event.aspect}° : ${
+    `${event.body} ${event.aspect}° / ${
       formatDate(event.timestamp)
     }`
   ).join("\n");
 }
 
+function formatTangencies(events) {
+  if (!events.length) return "なし";
+
+  return events.slice(0, 30).map(event =>
+    `${event.body} ${event.aspect}° / ${
+      formatDate(event.timestamp)
+    } / 誤差 ${event.error.toFixed(7)}° / ${event.type}`
+  ).join("\n");
+}
+
 // ======================================
-// メイン検証
+// メイン処理
 // ======================================
 
 async function runTest() {
   const button = document.getElementById("runButton");
+
   button.disabled = true;
   button.textContent = "検証中...";
 
-  output.textContent = "計算を開始しています...\n";
+  output.textContent = "初期化中...\n";
 
   try {
-    const results = {};
+    const allEvents = [];
+    const allTangencies = [];
+    const sampleStats = [];
 
-    for (const config of STEPS) {
-      output.textContent +=
-        `\n${config.label}で検出中...\n`;
+    for (const body of BODIES) {
+      output.textContent += `${body} を計算中...\n`;
 
-      await new Promise(resolve =>
-        setTimeout(resolve, 30)
+      // ブラウザに描画機会を渡す
+      await new Promise(resolve => setTimeout(resolve, 20));
+
+      const samples = buildSamples(body);
+
+      const crossings = detectCrossings(
+        body,
+        samples
       );
 
-      const events = scanAspectEvents(
-        config.minutes
+      const tangencies = detectTangencies(
+        body,
+        samples
       );
 
-      results[config.minutes] = events;
+      allEvents.push(...crossings);
+      allTangencies.push(...tangencies);
 
-      output.textContent +=
-        `${config.label}: ${events.length}件\n`;
+      sampleStats.push({
+        body,
+        samples: samples.length,
+        events: crossings.length,
+        tangencies: tangencies.length
+      });
     }
 
-    // 1分間隔を比較基準とする
-    const reference = results[1];
+    const repeated = findRepeatedPassages(allEvents);
+    const boundaries = checkBoundaries();
+    const stations = detectStations();
+    const sideChecks = validateEventSides(allEvents);
 
-    const comparison15 = compareEvents(
-      reference,
-      results[15]
+    const failedSides = sideChecks.filter(
+      item => !item.pass
     );
 
-    const comparison5 = compareEvents(
-      reference,
-      results[5]
-    );
-
-    const angleCheck = validateAngles(reference);
-
-    const directionChanges =
-      checkDirectionChanges();
-
-    // 重複確認
-    const duplicateCount =
-      reference.length -
-      removeDuplicates([...reference]).length;
+    const duplicateEvents =
+      allEvents.length -
+      deduplicate([...allEvents]).length;
 
     let report = "";
 
-    report += "================================\n";
-    report += "アスペクト検出漏れ検証結果\n";
-    report += "================================\n\n";
+    report += "====================================\n";
+    report += "特殊ケース検証結果\n";
+    report += "====================================\n\n";
 
-    report += `検証期間: ${START.toISOString()} ～ ${END.toISOString()}\n\n`;
+    report += `期間: ${START.toISOString()} ～ ${END.toISOString()}\n`;
+    report += `走査間隔: 1分\n`;
+    report += `対象天体: ${BODIES.join(", ")}\n`;
+    report += `対象アスペクト: ${ASPECTS.join(", ")}度\n\n`;
 
-    report += "【検出件数】\n";
-    report += `15分間隔: ${results[15].length}件\n`;
-    report += `5分間隔 : ${results[5].length}件\n`;
-    report += `1分間隔 : ${results[1].length}件\n\n`;
+    report += "【1. 通常アスペクト通過】\n";
+    report += `検出イベント数: ${allEvents.length}件\n`;
+    report += `重複数: ${duplicateEvents}件\n\n`;
 
-    report += "【15分間隔 vs 1分間隔】\n";
-    report += `1分側で見つかった未検出: ${comparison15.missing.length}件\n`;
-    report += `15分側だけの追加検出: ${comparison15.extra.length}件\n\n`;
+    report += "【2. 接線・ニアミス】\n";
+    report += `候補数: ${allTangencies.length}件\n`;
+    report += `成立候補: ${allTangencies.filter(x => x.exactTouch).length}件\n`;
+    report += `ニアミス候補: ${allTangencies.filter(x => !x.exactTouch).length}件\n`;
+    report += `検出しきい値: ${NEAR_MISS_LIMIT}°\n\n`;
+    report += formatTangencies(allTangencies);
+    report += "\n\n";
 
-    report += "【5分間隔 vs 1分間隔】\n";
-    report += `1分側で見つかった未検出: ${comparison5.missing.length}件\n`;
-    report += `5分側だけの追加検出: ${comparison5.extra.length}件\n\n`;
+    report += "【3. 同じアスペクトの複数回通過】\n";
+    report += `該当ペア数: ${repeated.length}組\n`;
 
-    report += "【角度精度】\n";
-    report += `合格: ${angleCheck.passed}件\n`;
-    report += `不合格: ${angleCheck.failed}件\n`;
-    report += `最大角度誤差: ${angleCheck.maxError.toFixed(9)}°\n`;
-    report += `許容誤差: 0.001°\n\n`;
+    for (const group of repeated) {
+      report += `${group.key}: ${group.count}回\n`;
 
-    report += "【重複検出】\n";
-    report += `重複件数: ${duplicateCount}件\n\n`;
-
-    report += "【順行・逆行の方向変化】\n";
-    report += `検出件数: ${directionChanges.length}件\n`;
-
-    for (const change of directionChanges) {
-      report +=
-        `${change.body}: ${change.from} → ${change.to} / ${formatDate(change.timestamp)}\n`;
+      for (const event of group.events) {
+        report += `  ${formatDate(event.timestamp)}\n`;
+      }
     }
 
-    report += "\n【15分間隔で見落としたイベント】\n";
-    report += describeEvents(comparison15.missing);
-    report += "\n\n【5分間隔で見落としたイベント】\n";
-    report += describeEvents(comparison5.missing);
+    if (!repeated.length) {
+      report += "複数回通過は見つかりませんでした。\n";
+    }
 
-    report += "\n\n【角度検証の不合格イベント】\n";
-    report += angleCheck.failures.length
-      ? angleCheck.failures.slice(0, 15).map(event =>
-          `${event.body} ${event.aspect}° / 誤差 ${event.error}°`
-        ).join("\n")
-      : "なし";
+    report += "\n【4. 期間境界付近】\n";
+    report += `候補数: ${boundaries.length}件\n`;
 
-    report += "\n\n================================\n";
-    report += "判定の目安\n";
-    report += "================================\n";
+    for (const item of boundaries) {
+      report += `${item.body} ${item.aspect}° / ${formatDate(item.timestamp)} / 誤差 ${item.error.toFixed(7)}°\n`;
+    }
+
+    if (!boundaries.length) report += "候補なし\n";
+
+    report += "\n【5. 天体の留（順行・逆行切り替え）】\n";
+    report += `検出数: ${stations.length}件\n`;
+
+    for (const station of stations) {
+      report += `${station.body}: ${station.from} → ${station.to}\n`;
+      report += `  時刻: ${formatDate(station.timestamp)}\n`;
+      report += `  近似速度: ${station.speedAtStation.toExponential(5)} 度/日\n`;
+    }
+
+    if (!stations.length) report += "該当なし\n";
+
+    report += "\n【6. アスペクト成立時刻の角度精度】\n";
+    report += `検査数: ${sideChecks.length}件\n`;
+    report += `合格: ${sideChecks.length - failedSides.length}件\n`;
+    report += `不合格: ${failedSides.length}件\n`;
+    report += `許容誤差: ${ANGLE_TOLERANCE}°\n`;
+
+    if (failedSides.length) {
+      for (const item of failedSides.slice(0, 20)) {
+        report += `${item.body} ${item.aspect}° / 誤差 ${item.exactError.toFixed(9)}°\n`;
+      }
+    }
+
+    report += "\n【7. 成立前後の角度変化】\n";
+
+    for (const item of sideChecks.slice(0, 20)) {
+      report += `${item.body} ${item.aspect}°\n`;
+      report += `  成立時誤差: ${item.exactError.toFixed(8)}°\n`;
+      report += `  1分前の相対角変化: ${item.beforeDelta.toFixed(7)}°\n`;
+      report += `  1分後の相対角変化: ${item.afterDelta.toFixed(7)}°\n`;
+    }
+
+    report += "\n【8. 天体別集計】\n";
+
+    for (const stat of sampleStats) {
+      report += `${stat.body}: サンプル ${stat.samples} / 通過 ${stat.events} / 接線候補 ${stat.tangencies}\n`;
+    }
+
+    report += "\n====================================\n";
+    report += "総合判定\n";
+    report += "====================================\n";
 
     if (
-      comparison15.missing.length === 0 &&
-      comparison5.missing.length === 0 &&
-      angleCheck.failed === 0 &&
-      duplicateCount === 0
+      duplicateEvents === 0 &&
+      failedSides.length === 0
     ) {
-      report += "基本検証: PASS\n";
+      report += "基本精度チェック: PASS\n";
     } else {
-      report += "基本検証: 要確認\n";
+      report += "基本精度チェック: 要確認\n";
     }
 
-    report += "\n※ 1分間隔の結果を比較基準としています。\n";
-    report += "※ 同じ計算ロジック同士の比較であり、絶対的な検出漏れゼロの証明ではありません。\n";
-    report += "※ 接触して反転するだけの接線的なアスペクトは、通常の符号反転検出では見落とす可能性があります。\n";
-    report += "※ 方向変化は6時間ごとのサンプリングによる参考値です。\n";
+    report += "\n※ 接線候補は極値付近の近似検出です。";
+    report += "\n※ ニアミスは実際にアスペクトが成立したことを意味しません。";
+    report += "\n※ 複数回通過は同じ天体ペア・同じアスペクトの複数イベントを集計しています。";
+    report += "\n※ 留の時刻は黄経速度の符号変化を二分探索で近似しています。";
+    report += "\n※ 1分間隔の走査でも、1分未満の極端に短い挙動や接線を完全に保証するものではありません。";
+    report += "\n※ これは同じ天文計算ライブラリを使った内部検証であり、外部天文暦との独立照合ではありません。";
 
     output.textContent = report;
 
   } catch (error) {
     output.textContent =
-      "ERROR:\n" +
-      error.stack;
+      "ERROR:\n" + error.stack;
   } finally {
     button.disabled = false;
     button.textContent = "もう一度検証する";
