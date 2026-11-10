@@ -12,37 +12,37 @@
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
 
-  <script>
-    const output = document.getElementById("result");
 
-    try {
-      output.textContent =
-        "Astronomyの存在: " + typeof Astronomy + "\n";
+<script>
+  const output = document.getElementById("result");
 
-      const now = new Date();
+  try {
+    const now = new Date();
 
-      const moonLongitude =
-        Astronomy.EclipticLongitude("Moon", now);
+    // 太陽の地心黄経
+    const sun = Astronomy.SunPosition(now);
 
-      const sunLongitude =
-        Astronomy.EclipticLongitude("Sun", now);
+    // 月の地心黄経
+    const moon = Astronomy.EclipticGeoMoon(now);
 
-      const moonPhase =
-        Astronomy.MoonPhase(now);
+    // 月相
+    const phase = Astronomy.MoonPhase(now);
 
-      output.textContent += JSON.stringify({
-        datetime: now.toISOString(),
-        moonLongitude: moonLongitude,
-        sunLongitude: sunLongitude,
-        moonPhase: moonPhase,
-        status: "SUCCESS"
-      }, null, 2);
+    const result = {
+      datetime: now.toISOString(),
+      sunLongitude: sun.elon,
+      moonLongitude: moon.lon,
+      moonPhase: phase,
+      status: "SUCCESS"
+    };
 
-    } catch (error) {
-      output.textContent +=
-        "\nERROR: " + String(error) +
-        "\n" + (error.stack || "");
-    }
-  </script>
+    output.textContent = JSON.stringify(result, null, 2);
+
+  } catch (error) {
+    output.textContent =
+      "ERROR: " + error.message + "\n" + error.stack;
+  }
+</script>
+
 </body>
 </html>
