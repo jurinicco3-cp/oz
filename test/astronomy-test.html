@@ -4,10 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>月の星座移動時刻テスト</title>
+  <title>Void of Course Moon Test</title>
 </head>
 <body>
-  <h1>月の星座移動時刻テスト</h1>
+  <h1>ボイドタイム計算テスト</h1>
   <pre id="result">計算中...</pre>
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
@@ -21,20 +21,64 @@
       "射手座", "山羊座", "水瓶座", "魚座"
     ];
 
-    // 月の地心黄経を取得
+    const bodies = [
+      ["Sun", "太陽"],
+      ["Mercury", "水星"],
+      ["Venus", "金星"],
+      ["Mars", "火星"],
+      ["Jupiter", "木星"],
+      ["Saturn", "土星"],
+      ["Uranus", "天王星"],
+      ["Neptune", "海王星"],
+      ["Pluto", "冥王星"]
+    ];
+
+    const aspects = [
+      { angle: 0, name: "コンジャンクション" },
+      { angle: 60, name: "セクスタイル" },
+      { angle: 90, name: "スクエア" },
+      { angle: 120, name: "トライン" },
+      { angle: 180, name: "オポジション" }
+    ];
+
+    const HOUR = 60 * 60 * 1000;
+    const STEP = 15 * 60 * 1000;
+
+    function normalize(angle) {
+      return ((angle % 360) + 360) % 360;
+    }
+
+    // -180度〜180度に正規化
+    function signedAngle(angle) {
+      return normalize(angle + 180) - 180;
+    }
+
     function getMoonLongitude(date) {
       return Astronomy.EclipticGeoMoon(date).lon;
     }
 
-    // 黄経から星座番号を取得
-    function getSignIndex(longitude) {
-      const normalized =
-        ((longitude % 360) + 360) % 360;
+    function getLongitude(bodyName, date) {
+      if (bodyName === "Sun") {
+        return Astronomy.SunPosition(date).elon;
+      }
 
-      return Math.floor(normalized / 30);
+      if (bodyName === "Moon") {
+        return Astronomy.EclipticGeoMoon(date).lon;
+      }
+
+      const vector = Astronomy.GeoVector(
+        Astronomy.Body[bodyName], date, true
+      );
+
+      return Astronomy.Ecliptic(vector).elon;
     }
 
-    // 日本時間に変換
+    function getSignIndex(date) {
+      return Math.floor(
+        normalize(getMoonLongitude(date)) / 30
+      );
+    }
+
     function formatJST(date) {
       return new Intl.DateTimeFormat("ja-JP", {
         timeZone: "Asia/Tokyo",
@@ -49,100 +93,290 @@
       }).format(date);
     }
 
-    try {
-      const now = new Date();
-
-      const currentLongitude =
-        getMoonLongitude(now);
-
-      const currentSignIndex =
-        getSignIndex(currentLongitude);
-
-      const nextSignIndex =
-        (currentSignIndex + 1) % 12;
-
-      // 次の星座の境界（30度単位）
-      const nextBoundary =
-        ((currentSignIndex + 1) * 30) % 360;
-
-      // 現在地から境界までの角度
-      const targetDistance =
-        (nextBoundary - currentLongitude + 360) % 360;
-
-      // 境界ぴったりの場合は次の境界を探す
-      const requiredDistance =
-        targetDistance < 0.000001
-          ? 30
-          : targetDistance;
-
-      // 1時間ずつ進めて境界を探す
-      const oneHour = 60 * 60 * 1000;
-
-      let lowTime = now.getTime();
-      let highTime = null;
+    // 現在の星座への移動時刻を過去にさかのぼって探す
+    function findPreviousIngress(now, currentSign) {
+      let right = now.getTime();
+      let left = null;
 
       for (let i = 1; i <= 96; i++) {
-        const testTime =
-          new Date(now.getTime() + oneHour * i);
+        const t = now.getTime() - HOUR * i;
 
-        const testLongitude =
-          getMoonLongitude(testTime);
-
-        const distance =
-          (testLongitude - currentLongitude + 360) % 360;
-
-        if (distance >= requiredDistance) {
-          highTime = testTime.getTime();
+        if (getSignIndex(new Date(t)) !== currentSign) {
+          left = t;
           break;
         }
       }
 
-      if (highTime === null) {
-        throw new Error("4日以内に移動時刻を発見できませんでした");
+      if (left === null) {
+        throw new Error("前回の星座移動を発見できませんでした");
       }
 
-      // 二分探索で時刻を絞り込む
       for (let i = 0; i < 45; i++) {
-        const midTime =
-          (lowTime + highTime) / 2;
+        const mid = (left + right) / 2;
 
-        const midLongitude =
-          getMoonLongitude(new Date(midTime));
-
-        const distance =
-          (midLongitude - currentLongitude + 360) % 360;
-
-        if (distance >= requiredDistance) {
-          highTime = midTime;
+        if (getSignIndex(new Date(mid)) === currentSign) {
+          right = mid;
         } else {
-          lowTime = midTime;
+          left = mid;
         }
       }
 
-      const ingressTime =
-        new Date(highTime);
+      return new Date(right);
+    }
+
+    // 次の星座への移動時刻を探す
+    function findNextIngress(now, currentSign) {
+      let left = now.getTime();
+      let right = null;
+
+      for (let i = 1; i <= 96; i++) {
+        const t = now.getTime() + HOUR * i;
+
+        if (getSignIndex(new Date(t)) !== currentSign) {
+          right = t;
+          break;
+        }
+      }
+
+      if (right === null) {
+        throw new Error("次の星座移動を発見できませんでした");
+      }
+
+      for (let i = 0; i < 45; i++) {
+        const mid = (left + right) / 2;
+
+        if (getSignIndex(new Date(mid)) === currentSign) {
+          left = mid;
+        } else {
+          right = mid;
+        }
+      }
+
+      return new Date(right);
+    }
+
+    // 月と天体の相対黄経
+    function getRelativeLongitude(bodyName, date) {
+      const moon = getMoonLongitude(date);
+      const planet = getLongitude(bodyName, date);
+
+      return normalize(moon - planet);
+    }
+
+    // ある天体とのアスペクト発生時刻を探索
+    function findAspectEvents(
+      bodyName, bodyJapanese, start, end
+    ) {
+      const events = [];
+
+      let t0 = start.getTime();
+      let raw0 = getRelativeLongitude(
+        bodyName, new Date(t0)
+      );
+
+      // 相対黄経を連続した角度に展開
+      let u0 = raw0;
+
+      while (t0 < end.getTime()) {
+        const t1 = Math.min(t0 + STEP, end.getTime());
+
+        const raw1 = getRelativeLongitude(
+          bodyName, new Date(t1)
+        );
+
+        const u1 = u0 + signedAngle(raw1 - raw0);
+
+        if (Math.abs(u1 - u0) > 0.000000001) {
+          for (const aspect of aspects) {
+            const targets = [
+              aspect.angle,
+              normalize(360 - aspect.angle)
+            ];
+
+            const uniqueTargets = [...new Set(targets)];
+
+            for (const base of uniqueTargets) {
+              const min = Math.min(u0, u1);
+              const max = Math.max(u0, u1);
+
+              const kStart =
+                Math.floor((min - base) / 360) - 1;
+
+              const kEnd =
+                Math.ceil((max - base) / 360) + 1;
+
+              for (let k = kStart; k <= kEnd; k++) {
+                const target = base + 360 * k;
+
+                const increasing = u1 > u0;
+
+                const crossed = increasing
+                  ? target > u0 && target <= u1
+                  : target < u0 && target >= u1;
+
+                if (!crossed) continue;
+
+                // 二分探索で正確な時刻を絞る
+                let lo = t0;
+                let hi = t1;
+
+                for (let j = 0; j < 40; j++) {
+                  const mid = (lo + hi) / 2;
+
+                  const rawMid =
+                    getRelativeLongitude(
+                      bodyName, new Date(mid)
+                    );
+
+                  const uMid =
+                    u0 + signedAngle(rawMid - raw0);
+
+                  if (increasing) {
+                    if (uMid >= target) {
+                      hi = mid;
+                    } else {
+                      lo = mid;
+                    }
+                  } else {
+                    if (uMid <= target) {
+                      hi = mid;
+                    } else {
+                      lo = mid;
+                    }
+                  }
+                }
+
+                const eventTime =
+                  new Date((lo + hi) / 2);
+
+                events.push({
+                  body: bodyName,
+                  bodyName: bodyJapanese,
+                  aspect: aspect.name,
+                  angle: aspect.angle,
+                  datetimeUTC: eventTime.toISOString(),
+                  datetimeJST: formatJST(eventTime),
+                  timestamp: eventTime.getTime()
+                });
+              }
+            }
+          }
+        }
+
+        t0 = t1;
+        raw0 = raw1;
+        u0 = u1;
+      }
+
+      return events;
+    }
+
+    try {
+      const now = new Date();
+
+      const currentSign = getSignIndex(now);
+
+      const signStart = findPreviousIngress(
+        now, currentSign
+      );
+
+      const signEnd = findNextIngress(
+        now, currentSign
+      );
+
+      // 現在の星座にいる間の全アスペクトを探索
+      let allEvents = [];
+
+      for (const [bodyName, japanese] of bodies) {
+        const events = findAspectEvents(
+          bodyName,
+          japanese,
+          signStart,
+          signEnd
+        );
+
+        allEvents = allEvents.concat(events);
+      }
+
+      allEvents.sort(
+        (a, b) => a.timestamp - b.timestamp
+      );
+
+      const lastAspect =
+        allEvents.length > 0
+          ? allEvents[allEvents.length - 1]
+          : null;
+
+      let voidStatus;
+      let voidStart = null;
+
+      if (lastAspect === null) {
+        voidStatus = "NO_ASPECT_FOUND";
+      } else {
+        voidStart = new Date(lastAspect.timestamp);
+
+        voidStatus =
+          lastAspect.timestamp <= now.getTime()
+            ? "VOID_NOW"
+            : "NOT_YET_VOID";
+      }
 
       const result = {
         status: "SUCCESS",
 
-        calculation: {
-          zodiacSystem: "Tropical Zodiac",
+        rules: {
+          zodiac: "Tropical",
           coordinateSystem: "Geocentric Ecliptic",
-          searchMethod: "Hourly scan + bisection"
+          aspects: "0, 60, 90, 120, 180 degrees",
+          bodies: "Sun through Pluto, excluding Moon",
+          searchIntervalMinutes: 15,
+          method: "Angle crossing + bisection"
         },
 
         current: {
-          datetimeUTC: now.toISOString(),
-          sign: signs[currentSignIndex],
-          longitude: currentLongitude
+          sign: signs[currentSign],
+          longitude: getMoonLongitude(now),
+          datetimeUTC: now.toISOString()
         },
 
-        nextIngress: {
-          sign: signs[nextSignIndex],
-          boundaryLongitude: nextBoundary,
-          datetimeUTC: ingressTime.toISOString(),
-          datetimeJST: formatJST(ingressTime)
-        }
+        currentSignPeriod: {
+          ingressJST: formatJST(signStart),
+          nextIngressJST: formatJST(signEnd)
+        },
+
+        aspectEvents: allEvents.map(event => ({
+          body: event.bodyName,
+          aspect: event.aspect,
+          angle: event.angle,
+          datetimeUTC: event.datetimeUTC,
+          datetimeJST: event.datetimeJST
+        })),
+
+        lastAspectBeforeIngress: lastAspect
+          ? {
+              body: lastAspect.bodyName,
+              aspect: lastAspect.aspect,
+              angle: lastAspect.angle,
+              datetimeUTC: lastAspect.datetimeUTC,
+              datetimeJST: lastAspect.datetimeJST
+            }
+          : null,
+
+        voidPeriod: lastAspect
+          ? {
+              startJST: formatJST(voidStart),
+              endJST: formatJST(signEnd),
+              durationHours: Number(
+                ((signEnd.getTime() -
+                  voidStart.getTime()) / HOUR).toFixed(2)
+              ),
+              isActiveNow: voidStatus === "VOID_NOW",
+              status: voidStatus
+            }
+          : {
+              status: "判定保留",
+              reason: "現在の星座内で対象アスペクトが見つかりませんでした"
+            }
       };
 
       output.textContent =
