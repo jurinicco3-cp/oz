@@ -1,1 +1,49 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Astronomy Engine Test</title>
+</head>
+<body>
+  <h1>Astronomy Engine 動作テスト</h1>
+  <pre id="result">計算中...</pre>
+
+  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script>
+    const now = new Date();
+
+    const bodies = [
+      "Sun", "Moon", "Mercury", "Venus",
+      "Mars", "Jupiter", "Saturn",
+      "Uranus", "Neptune", "Pluto"
+    ];
+
+    const result = {
+      datetime: now.toISOString(),
+      planets: {}
+    };
+
+    try {
+      bodies.forEach(name => {
+        const body = Astronomy.Body[name];
+
+        result.planets[name] = {
+          longitude: Astronomy.EclipticLongitude(body, now)
+        };
+      });
+
+      result.moonPhase = Astronomy.MoonPhase(now);
+      result.status = "SUCCESS";
+    } catch (error) {
+      result.status = "ERROR";
+      result.error = error.message;
+    }
+
+    document.getElementById("result").textContent =
+      JSON.stringify(result, null, 2);
+  </script>
+</body>
+</html>
+
