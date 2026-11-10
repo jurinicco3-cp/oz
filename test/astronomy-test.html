@@ -4,16 +4,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Astronomy Engine 10 Bodies Test</title>
+  <title>10天体・12星座判定テスト</title>
 </head>
 <body>
-  <h1>10天体 黄経取得テスト</h1>
+  <h1>10天体・12星座判定テスト</h1>
   <pre id="result">計算中...</pre>
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
 
   <script>
     const output = document.getElementById("result");
+
+    const signs = [
+      "牡羊座", "牡牛座", "双子座", "蟹座",
+      "獅子座", "乙女座", "天秤座", "蠍座",
+      "射手座", "山羊座", "水瓶座", "魚座"
+    ];
+
+    function getZodiac(longitude) {
+      const normalized =
+        ((longitude % 360) + 360) % 360;
+
+      const signIndex =
+        Math.floor(normalized / 30);
+
+      const degreeInSign =
+        normalized % 30;
+
+      const degree =
+        Math.floor(degreeInSign);
+
+      const minute =
+        Math.floor((degreeInSign - degree) * 60);
+
+      return {
+        sign: signs[signIndex],
+        degree: degree,
+        minute: minute
+      };
+    }
 
     try {
       const now = new Date();
@@ -38,36 +67,29 @@
 
         if (name === "Sun") {
           longitude = Astronomy.SunPosition(now).elon;
-
         } else if (name === "Moon") {
           longitude = Astronomy.EclipticGeoMoon(now).lon;
-
         } else {
-          const body = Astronomy.Body[name];
-
           const vector = Astronomy.GeoVector(
-            body, now, true
+            Astronomy.Body[name], now, true
           );
-
           longitude = Astronomy.Ecliptic(vector).elon;
         }
 
         positions[name] = {
           name: japanese,
-          longitude: longitude
+          longitude: Number(longitude.toFixed(6)),
+          zodiac: getZodiac(longitude)
         };
       });
 
-      const result = {
+      output.textContent = JSON.stringify({
         datetime: now.toISOString(),
-        coordinateSystem: "Geocentric ecliptic longitude",
+        zodiacSystem: "Tropical Zodiac",
+        coordinateSystem: "Geocentric Ecliptic",
         positions: positions,
-        moonPhase: Astronomy.MoonPhase(now),
         status: "SUCCESS"
-      };
-
-      output.textContent =
-        JSON.stringify(result, null, 2);
+      }, null, 2);
 
     } catch (error) {
       output.textContent = JSON.stringify({
