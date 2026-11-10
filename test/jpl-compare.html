@@ -1,1 +1,141 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JPL Horizons 水星位置比較</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 760px;
+      margin: 30px auto;
+      padding: 0 16px;
+      line-height: 1.7;
+      color: #222;
+    }
+    h1 { font-size: 1.5rem; }
+    .result {
+      background: #f3f5f7;
+      border-radius: 10px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .value {
+      font-size: 1.25rem;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+    .note {
+      color: #555;
+      font-size: 0.9rem;
+    }
+    .error { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>JPL Horizons 水星位置比較</h1>
+  <p>比較日時：2026年11月10日 04:20:51.295 UTC</p>
+
+  <div id="status">計算中...</div>
+
+  <div class="result">
+    <h2>JPL Horizons</h2>
+    <div id="jpl" class="value">---</div>
+    <p class="note">JPLのX・Y座標から計算した黄経（J2000黄道）</p>
+  </div>
+
+  <div class="result">
+    <h2>Astronomy Engine</h2>
+    <div id="engine" class="value">---</div>
+    <p class="note">GeoVector(Mercury, date, false) から計算</p>
+  </div>
+
+  <div class="result">
+    <h2>黄経の差</h2>
+    <div id="difference" class="value">---</div>
+    <p class="note">2つの黄経の最小角度差</p>
+  </div>
+
+  <p class="note">
+    注意：JPLのデータは幾何学的位置（光行時間補正なし）です。
+    Astronomy EngineのGeoVectorは、aberration=falseでも
+    光行時間補正を行います。そのため、この差には計算モデルの差だけでなく、
+    光行時間補正の違いも含まれます。
+  </p>
+
+  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script>
+    function normalize(angle) {
+      return ((angle % 360) + 360) % 360;
+    }
+
+    function angularDifference(a, b) {
+      return Math.abs(((a - b + 540) % 360) - 180);
+    }
+
+    function toDegrees(radians) {
+      return radians * 180 / Math.PI;
+    }
+
+    function runComparison() {
+      try {
+        const date = new Date("2026-11-10T04:20:51.295Z");
+
+        // JPL Horizonsの幾何学的位置ベクトル
+        const jplX = -5.971982005547347E-01;
+        const jplY = -4.310059316505555E-01;
+
+        // JPLの黄道座標はJ2000基準
+        const jplLongitude = normalize(
+          toDegrees(Math.atan2(jplY, jplX))
+        );
+
+        // Astronomy Engineの地心ベクトル
+        // false = 光行差補正なし
+        const vector = Astronomy.GeoVector(
+          Astronomy.Body.Mercury,
+          date,
+          false
+        );
+
+        // EQJ（J2000赤道座標）から
+        // J2000黄道座標へ変換
+        const obliquity = 23.439291111 * Math.PI / 180;
+
+        const eclipticY =
+          vector.y * Math.cos(obliquity) +
+          vector.z * Math.sin(obliquity);
+
+        const engineLongitude = normalize(
+          toDegrees(Math.atan2(eclipticY, vector.x))
+        );
+
+        const difference = angularDifference(
+          engineLongitude,
+          jplLongitude
+        );
+
+        document.getElementById("jpl").textContent =
+          jplLongitude.toFixed(9) + "°";
+
+        document.getElementById("engine").textContent =
+          engineLongitude.toFixed(9) + "°";
+
+        document.getElementById("difference").textContent =
+          difference.toFixed(9) + "°";
+
+        document.getElementById("status").textContent =
+          "計算完了";
+
+      } catch (error) {
+        document.getElementById("status").innerHTML =
+          '<span class="error">エラー：' + error.message + '</span>';
+      }
+    }
+
+    window.addEventListener("load", runComparison);
+  </script>
+</body>
+</html>
+
