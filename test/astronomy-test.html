@@ -37,12 +37,16 @@
       result.moonPhase = Astronomy.MoonPhase(now);
       result.status = "SUCCESS";
     } catch (error) {
-      result.status = "ERROR";
-      result.error = error.stack || error.message;
-    }
+  result.status = "ERROR";
+  result.error = String(error);
+  result.errorType = typeof error;
+  result.stack = error && error.stack
+    ? error.stack
+    : "スタック情報なし";
+}
 
-    document.getElementById("result").textContent =
-      JSON.stringify(result, null, 2);
+document.getElementById("result").textContent =
+  JSON.stringify(result, null, 2);
   </script>
 </body>
 </html>
