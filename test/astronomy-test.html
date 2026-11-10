@@ -4,45 +4,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Astronomy Engine Test</title>
+  <title>Astronomy Engine 10 Bodies Test</title>
 </head>
 <body>
-  <h1>Astronomy Engine 動作テスト</h1>
+  <h1>10天体 黄経取得テスト</h1>
   <pre id="result">計算中...</pre>
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
 
+  <script>
+    const output = document.getElementById("result");
 
-<script>
-  const output = document.getElementById("result");
+    try {
+      const now = new Date();
 
-  try {
-    const now = new Date();
+      const planets = [
+        ["Sun", "太陽"],
+        ["Moon", "月"],
+        ["Mercury", "水星"],
+        ["Venus", "金星"],
+        ["Mars", "火星"],
+        ["Jupiter", "木星"],
+        ["Saturn", "土星"],
+        ["Uranus", "天王星"],
+        ["Neptune", "海王星"],
+        ["Pluto", "冥王星"]
+      ];
 
-    // 太陽の地心黄経
-    const sun = Astronomy.SunPosition(now);
+      const positions = {};
 
-    // 月の地心黄経
-    const moon = Astronomy.EclipticGeoMoon(now);
+      planets.forEach(([name, japanese]) => {
+        let longitude;
 
-    // 月相
-    const phase = Astronomy.MoonPhase(now);
+        if (name === "Sun") {
+          longitude = Astronomy.SunPosition(now).elon;
 
-    const result = {
-      datetime: now.toISOString(),
-      sunLongitude: sun.elon,
-      moonLongitude: moon.lon,
-      moonPhase: phase,
-      status: "SUCCESS"
-    };
+        } else if (name === "Moon") {
+          longitude = Astronomy.EclipticGeoMoon(now).lon;
 
-    output.textContent = JSON.stringify(result, null, 2);
+        } else {
+          const body = Astronomy.Body[name];
 
-  } catch (error) {
-    output.textContent =
-      "ERROR: " + error.message + "\n" + error.stack;
-  }
-</script>
+          const vector = Astronomy.GeoVector(
+            body, now, true
+          );
 
+          longitude = Astronomy.Ecliptic(vector).elon;
+        }
+
+        positions[name] = {
+          name: japanese,
+          longitude: longitude
+        };
+      });
+
+      const result = {
+        datetime: now.toISOString(),
+        coordinateSystem: "Geocentric ecliptic longitude",
+        positions: positions,
+        moonPhase: Astronomy.MoonPhase(now),
+        status: "SUCCESS"
+      };
+
+      output.textContent =
+        JSON.stringify(result, null, 2);
+
+    } catch (error) {
+      output.textContent = JSON.stringify({
+        status: "ERROR",
+        error: String(error),
+        stack: error.stack || ""
+      }, null, 2);
+    }
+  </script>
 </body>
 </html>
