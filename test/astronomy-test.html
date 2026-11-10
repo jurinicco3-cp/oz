@@ -169,82 +169,80 @@ function getMoonLongitude(date) {
 // 月の星座移動時刻
 // ========================================
 
+
 function findNextIngress(startDate) {
 
-  const startLongitude = getMoonLongitude(startDate);
+  const startLongitude = normalizeAngle(
+    getMoonLongitude(startDate)
+  );
 
   const currentSignIndex = Math.floor(
-    normalizeAngle(startLongitude) / 30
+    startLongitude / 30
   );
 
   const boundaryLongitude =
     (currentSignIndex + 1) * 30;
 
-  let previousTime = startDate;
-  let foundTime = null;
+  // 現在位置から次の境界までの角距離
+  const targetDelta = normalizeAngle(
+    boundaryLongitude - startLongitude
+  );
 
-  // 1時間刻みで移動境界を探す
+  let low = startDate.getTime();
+  let high = null;
+
+  // 1時間刻みで境界を通過する時刻を探す
   for (let i = 1; i <= 72; i++) {
 
     const testTime = new Date(
       startDate.getTime() + i * 3600000
     );
 
-    const previousLongitude =
-      getMoonLongitude(previousTime);
-
-    const currentLongitude =
-      getMoonLongitude(testTime);
-
-    const previousDistance = normalizeAngle(
-      boundaryLongitude - previousLongitude
+    const longitude = normalizeAngle(
+      getMoonLongitude(testTime)
     );
 
-    const currentDistance = normalizeAngle(
-      boundaryLongitude - currentLongitude
+    const progress = normalizeAngle(
+      longitude - startLongitude
     );
 
-    if (
-      currentDistance < previousDistance ||
-      currentDistance < 0.01
-    ) {
-      foundTime = testTime;
+    if (progress >= targetDelta) {
+      high = testTime.getTime();
       break;
     }
-
-    previousTime = testTime;
   }
 
-  if (!foundTime) {
-    throw new Error("次の星座移動時刻を発見できませんでした");
+  if (high === null) {
+    throw new Error(
+      "次の星座移動時刻を発見できませんでした"
+    );
   }
 
-  // 二分探索
-  let low = previousTime.getTime();
-  let high = foundTime.getTime();
-
-  for (let i = 0; i < 40; i++) {
+  // 二分探索で境界通過時刻を特定
+  for (let i = 0; i < 45; i++) {
 
     const mid = (low + high) / 2;
-    const midDate = new Date(mid);
 
     const longitude = normalizeAngle(
-      getMoonLongitude(midDate)
+      getMoonLongitude(new Date(mid))
     );
 
-    if (
-      normalizeAngle(boundaryLongitude - longitude) <
-      180
-    ) {
-      high = mid;
-    } else {
+    const progress = normalizeAngle(
+      longitude - startLongitude
+    );
+
+    if (progress < targetDelta) {
       low = mid;
+    } else {
+      high = mid;
     }
   }
 
   return {
     sign: SIGNS[(currentSignIndex + 1) % 12],
-    boundaryLongitude: normalizeAngle(boundaryLongitude),
+    boundaryLongitude: normalizeAngle(
+      boundaryLongitude
+    ),
     timestamp: (low + high) / 2
   };
 }
