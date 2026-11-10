@@ -4,10 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>10天体・12星座判定テスト</title>
+  <title>月の星座移動時刻テスト</title>
 </head>
 <body>
-  <h1>10天体・12星座判定テスト</h1>
+  <h1>月の星座移動時刻テスト</h1>
   <pre id="result">計算中...</pre>
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
@@ -21,75 +21,132 @@
       "射手座", "山羊座", "水瓶座", "魚座"
     ];
 
-    function getZodiac(longitude) {
+    // 月の地心黄経を取得
+    function getMoonLongitude(date) {
+      return Astronomy.EclipticGeoMoon(date).lon;
+    }
+
+    // 黄経から星座番号を取得
+    function getSignIndex(longitude) {
       const normalized =
         ((longitude % 360) + 360) % 360;
 
-      const signIndex =
-        Math.floor(normalized / 30);
+      return Math.floor(normalized / 30);
+    }
 
-      const degreeInSign =
-        normalized % 30;
-
-      const degree =
-        Math.floor(degreeInSign);
-
-      const minute =
-        Math.floor((degreeInSign - degree) * 60);
-
-      return {
-        sign: signs[signIndex],
-        degree: degree,
-        minute: minute
-      };
+    // 日本時間に変換
+    function formatJST(date) {
+      return new Intl.DateTimeFormat("ja-JP", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        weekday: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).format(date);
     }
 
     try {
       const now = new Date();
 
-      const planets = [
-        ["Sun", "太陽"],
-        ["Moon", "月"],
-        ["Mercury", "水星"],
-        ["Venus", "金星"],
-        ["Mars", "火星"],
-        ["Jupiter", "木星"],
-        ["Saturn", "土星"],
-        ["Uranus", "天王星"],
-        ["Neptune", "海王星"],
-        ["Pluto", "冥王星"]
-      ];
+      const currentLongitude =
+        getMoonLongitude(now);
 
-      const positions = {};
+      const currentSignIndex =
+        getSignIndex(currentLongitude);
 
-      planets.forEach(([name, japanese]) => {
-        let longitude;
+      const nextSignIndex =
+        (currentSignIndex + 1) % 12;
 
-        if (name === "Sun") {
-          longitude = Astronomy.SunPosition(now).elon;
-        } else if (name === "Moon") {
-          longitude = Astronomy.EclipticGeoMoon(now).lon;
-        } else {
-          const vector = Astronomy.GeoVector(
-            Astronomy.Body[name], now, true
-          );
-          longitude = Astronomy.Ecliptic(vector).elon;
+      // 次の星座の境界（30度単位）
+      const nextBoundary =
+        ((currentSignIndex + 1) * 30) % 360;
+
+      // 現在地から境界までの角度
+      const targetDistance =
+        (nextBoundary - currentLongitude + 360) % 360;
+
+      // 境界ぴったりの場合は次の境界を探す
+      const requiredDistance =
+        targetDistance < 0.000001
+          ? 30
+          : targetDistance;
+
+      // 1時間ずつ進めて境界を探す
+      const oneHour = 60 * 60 * 1000;
+
+      let lowTime = now.getTime();
+      let highTime = null;
+
+      for (let i = 1; i <= 96; i++) {
+        const testTime =
+          new Date(now.getTime() + oneHour * i);
+
+        const testLongitude =
+          getMoonLongitude(testTime);
+
+        const distance =
+          (testLongitude - currentLongitude + 360) % 360;
+
+        if (distance >= requiredDistance) {
+          highTime = testTime.getTime();
+          break;
         }
+      }
 
-        positions[name] = {
-          name: japanese,
-          longitude: Number(longitude.toFixed(6)),
-          zodiac: getZodiac(longitude)
-        };
-      });
+      if (highTime === null) {
+        throw new Error("4日以内に移動時刻を発見できませんでした");
+      }
 
-      output.textContent = JSON.stringify({
-        datetime: now.toISOString(),
-        zodiacSystem: "Tropical Zodiac",
-        coordinateSystem: "Geocentric Ecliptic",
-        positions: positions,
-        status: "SUCCESS"
-      }, null, 2);
+      // 二分探索で時刻を絞り込む
+      for (let i = 0; i < 45; i++) {
+        const midTime =
+          (lowTime + highTime) / 2;
+
+        const midLongitude =
+          getMoonLongitude(new Date(midTime));
+
+        const distance =
+          (midLongitude - currentLongitude + 360) % 360;
+
+        if (distance >= requiredDistance) {
+          highTime = midTime;
+        } else {
+          lowTime = midTime;
+        }
+      }
+
+      const ingressTime =
+        new Date(highTime);
+
+      const result = {
+        status: "SUCCESS",
+
+        calculation: {
+          zodiacSystem: "Tropical Zodiac",
+          coordinateSystem: "Geocentric Ecliptic",
+          searchMethod: "Hourly scan + bisection"
+        },
+
+        current: {
+          datetimeUTC: now.toISOString(),
+          sign: signs[currentSignIndex],
+          longitude: currentLongitude
+        },
+
+        nextIngress: {
+          sign: signs[nextSignIndex],
+          boundaryLongitude: nextBoundary,
+          datetimeUTC: ingressTime.toISOString(),
+          datetimeJST: formatJST(ingressTime)
+        }
+      };
+
+      output.textContent =
+        JSON.stringify(result, null, 2);
 
     } catch (error) {
       output.textContent = JSON.stringify({
