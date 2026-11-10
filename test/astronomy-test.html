@@ -38,7 +38,7 @@
       result.status = "SUCCESS";
     } catch (error) {
       result.status = "ERROR";
-      result.error = error.message;
+      result.error = error.stack || error.message;
     }
 
     document.getElementById("result").textContent =
