@@ -11,43 +11,38 @@
   <pre id="result">計算中...</pre>
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
+
   <script>
-    const now = new Date();
-
-    const bodies = [
-      "Sun", "Moon", "Mercury", "Venus",
-      "Mars", "Jupiter", "Saturn",
-      "Uranus", "Neptune", "Pluto"
-    ];
-
-    const result = {
-      datetime: now.toISOString(),
-      planets: {}
-    };
+    const output = document.getElementById("result");
 
     try {
-      bodies.forEach(name => {
-        const body = Astronomy.Body[name];
+      output.textContent =
+        "Astronomyの存在: " + typeof Astronomy + "\n";
 
-        result.planets[name] = {
-          longitude: Astronomy.EclipticLongitude(body, now)
-        };
-      });
+      const now = new Date();
 
-      result.moonPhase = Astronomy.MoonPhase(now);
-      result.status = "SUCCESS";
+      const moonLongitude =
+        Astronomy.EclipticLongitude("Moon", now);
+
+      const sunLongitude =
+        Astronomy.EclipticLongitude("Sun", now);
+
+      const moonPhase =
+        Astronomy.MoonPhase(now);
+
+      output.textContent += JSON.stringify({
+        datetime: now.toISOString(),
+        moonLongitude: moonLongitude,
+        sunLongitude: sunLongitude,
+        moonPhase: moonPhase,
+        status: "SUCCESS"
+      }, null, 2);
+
     } catch (error) {
-  result.status = "ERROR";
-  result.error = String(error);
-  result.errorType = typeof error;
-  result.stack = error && error.stack
-    ? error.stack
-    : "スタック情報なし";
-}
-
-document.getElementById("result").textContent =
-  JSON.stringify(result, null, 2);
+      output.textContent +=
+        "\nERROR: " + String(error) +
+        "\n" + (error.stack || "");
+    }
   </script>
 </body>
 </html>
-
