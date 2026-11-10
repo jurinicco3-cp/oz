@@ -3,71 +3,73 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>天体計算エンジン検証</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>アスペクト検出漏れ検証</title>
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 24px;
+    background: #101827;
+    color: #edf2f7;
+    line-height: 1.6;
+  }
+  h1 { color: #e9c77b; font-size: 24px; }
+  h2 { color: #e9c77b; font-size: 18px; margin-top: 28px; }
+  button {
+    padding: 12px 22px;
+    border: 0;
+    border-radius: 8px;
+    background: #d6ae5c;
+    color: #172033;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: #1d293b;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .note { color: #b8c5d6; font-size: 13px; }
+  .ok { color: #8de0ae; }
+  .warn { color: #f4c66d; }
+  .bad { color: #ff8585; }
+</style>
+</head>
+<body>
+
+<h1>アスペクト検出漏れ検証エンジン</h1>
+
+<p class="note">
+15分・5分・1分間隔の検出結果を比較し、
+検出漏れ・時刻差・角度誤差・重複を検証します。
+</p>
+
+<p>
+  検証期間：
+  <strong>2026年11月1日〜12月1日（UTC）</strong>
+</p>
+
+<button id="runButton" onclick="runTest()">検証スタート</button>
+
+<h2>検証結果</h2>
+<pre id="output">検証開始ボタンを押してください。</pre>
 
 <script src="../astronomy/astronomy.browser.min.js"></script>
 
-<style>
-body {
-  font-family: sans-serif;
-  background: #10172b;
-  color: #f5f0e6;
-  padding: 20px;
-  line-height: 1.7;
-}
-h1, h2 {
-  color: #e8c779;
-}
-pre {
-  background: #080d19;
-  color: #d8e6f5;
-  padding: 16px;
-  border-radius: 8px;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-button {
-  background: #d5ae59;
-  color: #10172b;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.status {
-  color: #8ee0ad;
-  font-weight: bold;
-}
-.error {
-  color: #ff9292;
-}
-</style>
-</head>
-
-<body>
-
-<h1>🌙 天体計算エンジン検証</h1>
-<p>天体位置・星座移動・アスペクト・ボイドタイムの検証</p>
-
-<button onclick="runTest()">計算を実行</button>
-
-<h2>検証結果</h2>
-<pre id="output">計算待機中...</pre>
-
 <script>
+"use strict";
 
-// ========================================
-// 基本設定
-// ========================================
+// ======================================
+// 設定
+// ======================================
 
-// 固定テスト日時（UTC）
-// 必要に応じて変更可能
-const now = new Date("2026-11-10T04:24:49.276Z");
+const START = new Date("2026-11-01T00:00:00Z");
+const END   = new Date("2026-12-01T00:00:00Z");
 
-// 計算対象の天体
 const BODIES = [
   "Sun",
   "Mercury",
@@ -80,80 +82,39 @@ const BODIES = [
   "Pluto"
 ];
 
-// アスペクト角度
 const ASPECTS = [0, 60, 90, 120, 180];
 
-// 星座
-const SIGNS = [
-  "牡羊座",
-  "牡牛座",
-  "双子座",
-  "蟹座",
-  "獅子座",
-  "乙女座",
-  "天秤座",
-  "蠍座",
-  "射手座",
-  "山羊座",
-  "水瓶座",
-  "魚座"
+const STEPS = [
+  { label: "15分間隔", minutes: 15 },
+  { label: "5分間隔", minutes: 5 },
+  { label: "1分間隔", minutes: 1 }
 ];
 
-// ========================================
-// 共通関数
-// ========================================
+const output = document.getElementById("output");
 
-function normalizeAngle(degree) {
-  return ((degree % 360) + 360) % 360;
+// ======================================
+// 基本角度関数
+// ======================================
+
+function normalize(angle) {
+  return ((angle % 360) + 360) % 360;
 }
 
-function formatJST(date) {
-  return new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  }).format(date);
+function signedDiff(a, b) {
+  return ((a - b + 540) % 360) - 180;
 }
 
-function getZodiac(longitude) {
-  const normalized = normalizeAngle(longitude);
-  const signIndex = Math.floor(normalized / 30);
-  const degreeInSign = normalized % 30;
-
-  const degree = Math.floor(degreeInSign);
-  const minute = Math.floor(
-    (degreeInSign - degree) * 60
-  );
-
-  return {
-    sign: SIGNS[signIndex],
-    degree,
-    minute
-  };
-}
-
-// ========================================
-// 天体黄経取得
-// ========================================
-
-function getLongitude(bodyName, date) {
-
-  if (bodyName === "Sun") {
+function getLongitude(body, date) {
+  if (body === "Sun") {
     return Astronomy.SunPosition(date).elon;
   }
 
-  if (bodyName === "Moon") {
+  if (body === "Moon") {
     return Astronomy.EclipticGeoMoon(date).lon;
   }
 
   const vector = Astronomy.GeoVector(
-    Astronomy.Body[bodyName],
+    Astronomy.Body[body],
     date,
     true
   );
@@ -161,745 +122,494 @@ function getLongitude(bodyName, date) {
   return Astronomy.Ecliptic(vector).elon;
 }
 
-function getMoonLongitude(date) {
-  return getLongitude("Moon", date);
+// 月と対象天体の相対黄経
+function getRelativeLongitude(body, date) {
+  const moon = getLongitude("Moon", date);
+  const planet = getLongitude(body, date);
+  return normalize(moon - planet);
 }
 
-// ========================================
-// 月の星座移動時刻
-// ========================================
+// ======================================
+// アスペクト判定用ターゲット
+// ======================================
 
+// 例：60度の場合は60度方向と300度方向の両方を検出
+function getTargets() {
+  const targets = [];
 
-function findNextIngress(startDate) {
+  for (const aspect of ASPECTS) {
+    targets.push(aspect);
 
-  const startLongitude = normalizeAngle(
-    getMoonLongitude(startDate)
-  );
-
-  const currentSignIndex = Math.floor(
-    startLongitude / 30
-  );
-
-  const boundaryLongitude =
-    (currentSignIndex + 1) * 30;
-
-  // 現在位置から次の境界までの角距離
-  const targetDelta = normalizeAngle(
-    boundaryLongitude - startLongitude
-  );
-
-  let low = startDate.getTime();
-  let high = null;
-
-  // 1時間刻みで境界を通過する時刻を探す
-  for (let i = 1; i <= 72; i++) {
-
-    const testTime = new Date(
-      startDate.getTime() + i * 3600000
-    );
-
-    const longitude = normalizeAngle(
-      getMoonLongitude(testTime)
-    );
-
-    const progress = normalizeAngle(
-      longitude - startLongitude
-    );
-
-    if (progress >= targetDelta) {
-      high = testTime.getTime();
-      break;
+    if (aspect !== 0 && aspect !== 180) {
+      targets.push(360 - aspect);
     }
   }
 
-  if (high === null) {
-    throw new Error(
-      "次の星座移動時刻を発見できませんでした"
-    );
-  }
-
-  // 二分探索で境界通過時刻を特定
-  for (let i = 0; i < 45; i++) {
-
-    const mid = (low + high) / 2;
-
-    const longitude = normalizeAngle(
-      getMoonLongitude(new Date(mid))
-    );
-
-    const progress = normalizeAngle(
-      longitude - startLongitude
-    );
-
-    if (progress < targetDelta) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-
-  return {
-    sign: SIGNS[(currentSignIndex + 1) % 12],
-    boundaryLongitude: normalizeAngle(
-      boundaryLongitude
-    ),
-    timestamp: (low + high) / 2
-  };
+  return [...new Set(targets)].sort((a, b) => a - b);
 }
 
-// 現在の星座への移動時刻を検索
-function findPreviousIngress(startDate) {
+const TARGETS = getTargets();
 
-  const currentLongitude = normalizeAngle(
-    getMoonLongitude(startDate)
-  );
+// ======================================
+// 1つの区間内でアスペクトを検出
+// ======================================
 
-  const currentSignIndex = Math.floor(
-    currentLongitude / 30
-  );
-
-  const boundaryLongitude = currentSignIndex * 30;
-
-  let previousTime = startDate;
-  let foundTime = null;
-
-  for (let i = 1; i <= 72; i++) {
-
-    const testTime = new Date(
-      startDate.getTime() - i * 3600000
-    );
-
-    const longitude = normalizeAngle(
-      getMoonLongitude(testTime)
-    );
-
-    const distance = normalizeAngle(
-      longitude - boundaryLongitude
-    );
-
-    const currentDistance = normalizeAngle(
-      getMoonLongitude(previousTime) - boundaryLongitude
-    );
-
-    if (distance > currentDistance) {
-      foundTime = testTime;
-      break;
-    }
-
-    previousTime = testTime;
-  }
-
-  if (!foundTime) {
-    throw new Error("前回の星座移動時刻を発見できませんでした");
-  }
-
-  let low = foundTime.getTime();
-  let high = previousTime.getTime();
-
-  for (let i = 0; i < 40; i++) {
-
-    const mid = (low + high) / 2;
-    const longitude = normalizeAngle(
-      getMoonLongitude(new Date(mid))
-    );
-
-    const distance = normalizeAngle(
-      longitude - boundaryLongitude
-    );
-
-    if (distance < 180) {
-      high = mid;
-    } else {
-      low = mid;
-    }
-  }
-
-  return {
-    sign: SIGNS[currentSignIndex],
-    boundaryLongitude,
-    timestamp: (low + high) / 2
-  };
-}
-
-// ========================================
-// 相対黄経の連続値計算
-// ========================================
-
-function getRelativeLongitude(bodyName, date) {
-
-  const moon = getMoonLongitude(date);
-  const planet = getLongitude(bodyName, date);
-
-  return normalizeAngle(moon - planet);
-}
-
-// 角度の変化を -180〜180° に変換
-function signedAngleDifference(a, b) {
-  return ((a - b + 540) % 360) - 180;
-}
-
-// ========================================
-// アスペクトイベント検索
-// ========================================
-
-function findAspectEvents(
-  bodyName,
-  startDate,
-  endDate,
-  stepMinutes
-) {
-
+function scanAspectEvents(stepMinutes) {
+  const stepMs = stepMinutes * 60 * 1000;
   const events = [];
 
-  const step = stepMinutes * 60000;
+  for (const body of BODIES) {
+    let t0 = START.getTime();
+    const endMs = END.getTime();
 
-  let t0 = startDate.getTime();
-  let u0 = getRelativeLongitude(
-    bodyName,
-    new Date(t0)
-  );
+    let date0 = new Date(t0);
+    let r0 = getRelativeLongitude(body, date0);
+    let unwrapped0 = r0;
 
-  while (t0 < endDate.getTime()) {
+    while (t0 < endMs) {
+      const t1 = Math.min(t0 + stepMs, endMs);
+      const date1 = new Date(t1);
+      const r1 = getRelativeLongitude(body, date1);
 
-    const t1 = Math.min(
-      t0 + step,
-      endDate.getTime()
-    );
+      // 相対角度を連続した値に展開する
+      const delta = signedDiff(r1, r0);
+      const unwrapped1 = unwrapped0 + delta;
 
-    const u1 = getRelativeLongitude(
-      bodyName,
-      new Date(t1)
-    );
+      const low = Math.min(unwrapped0, unwrapped1);
+      const high = Math.max(unwrapped0, unwrapped1);
 
-    const delta = signedAngleDifference(u1, u0);
+      // この区間を通過するアスペクト角を調べる
+      for (let k = Math.floor((low - 360) / 360);
+           k <= Math.ceil((high + 360) / 360);
+           k++) {
 
-    const continuousU1 = u0 + delta;
+        for (const targetBase of TARGETS) {
+          const target = targetBase + 360 * k;
 
-    for (const aspect of ASPECTS) {
+          // 区間内にターゲットが存在するか
+          const crosses =
+            (unwrapped0 < target && unwrapped1 >= target) ||
+            (unwrapped0 > target && unwrapped1 <= target);
 
-      const targets = [...new Set([
-        aspect,
-        normalizeAngle(360 - aspect)
-      ])];
+          if (!crosses) continue;
 
-      for (const target of targets) {
-
-        const first = Math.ceil(
-          (Math.min(u0, continuousU1) - target) / 360
-        );
-
-        const last = Math.floor(
-          (Math.max(u0, continuousU1) - target) / 360
-        );
-
-        for (let k = first; k <= last; k++) {
-
-          const targetContinuous = target + 360 * k;
-
-          if (
-            targetContinuous < Math.min(u0, continuousU1) ||
-            targetContinuous > Math.max(u0, continuousU1)
-          ) {
-            continue;
-          }
-
-          // 二分探索
-          let low = t0;
-          let high = t1;
-
-          const increasing = continuousU1 >= u0;
-
-          for (let j = 0; j < 40; j++) {
-
-            const mid = (low + high) / 2;
-
-            const raw = getRelativeLongitude(
-              bodyName,
-              new Date(mid)
-            );
-
-            const expected = u0 +
-              delta * ((mid - t0) / (t1 - t0));
-
-            const unwrapped = expected +
-              signedAngleDifference(raw, normalizeAngle(expected));
-
-            if (
-              (increasing && unwrapped < targetContinuous) ||
-              (!increasing && unwrapped > targetContinuous)
-            ) {
-              low = mid;
-            } else {
-              high = mid;
-            }
-          }
-
-          const timestamp = (low + high) / 2;
-
-          const duplicate = events.some(event =>
-            event.angle === aspect &&
-            Math.abs(event.timestamp - timestamp) < 1000
+          // 二分探索で正確な時刻を求める
+          const rootTime = findRoot(
+            body,
+            t0,
+            t1,
+            r0,
+            unwrapped0,
+            target
           );
 
-          if (!duplicate) {
-            events.push({
-              body: bodyName,
-              angle: aspect,
-              timestamp
-            });
-          }
+          const aspect = Math.min(
+            targetBase,
+            360 - targetBase
+          );
+
+          events.push({
+            body,
+            aspect,
+            timestamp: rootTime
+          });
         }
       }
-    }
 
-    t0 = t1;
-    u0 = continuousU1;
+      t0 = t1;
+      r0 = r1;
+      unwrapped0 = unwrapped1;
+    }
   }
 
-  return events.sort(
-    (a, b) => a.timestamp - b.timestamp
-  );
+  return removeDuplicates(events);
 }
 
-// ========================================
-// 全天体のアスペクトを計算
-// ========================================
+// ======================================
+// 二分探索
+// ======================================
 
-function calculateAllEvents(
-  startDate,
-  endDate,
-  stepMinutes
+function findRoot(
+  body,
+  leftTime,
+  rightTime,
+  leftRelative,
+  leftUnwrapped,
+  target
 ) {
+  let lo = leftTime;
+  let hi = rightTime;
 
-  let events = [];
-
-  for (const body of BODIES) {
-
-    const bodyEvents = findAspectEvents(
+  function valueAt(time) {
+    const relative = getRelativeLongitude(
       body,
-      startDate,
-      endDate,
-      stepMinutes
+      new Date(time)
     );
 
-    events = events.concat(bodyEvents);
+    return leftUnwrapped +
+      signedDiff(relative, leftRelative) -
+      target;
   }
 
-  return events.sort(
-    (a, b) => a.timestamp - b.timestamp
-  );
-}
+  let flo = valueAt(lo);
 
-// ========================================
-// 15分刻み・1分刻みの比較
-// ========================================
+  for (let i = 0; i < 45; i++) {
+    const mid = (lo + hi) / 2;
+    const fm = valueAt(mid);
 
-function compareEvents(events15, events1) {
-
-  const keys = [...new Set(
-    [...events15, ...events1].map(event =>
-      `${event.body}|${event.angle}`
-    )
-  )];
-
-  const details = [];
-
-  for (const key of keys) {
-
-    const list15 = events15.filter(event =>
-      `${event.body}|${event.angle}` === key
-    );
-
-    const list1 = events1.filter(event =>
-      `${event.body}|${event.angle}` === key
-    );
-
-    const count = Math.min(
-      list15.length,
-      list1.length
-    );
-
-    for (let i = 0; i < count; i++) {
-
-      const difference = Math.abs(
-        list15[i].timestamp - list1[i].timestamp
-      ) / 1000;
-
-      details.push({
-        event: key,
-        status: difference < 1 ? "一致" : "差異あり",
-        time15min: formatJST(
-          new Date(list15[i].timestamp)
-        ),
-        time1min: formatJST(
-          new Date(list1[i].timestamp)
-        ),
-        differenceSeconds: Number(
-          difference.toFixed(3)
-        )
-      });
+    if ((flo <= 0 && fm >= 0) ||
+        (flo >= 0 && fm <= 0)) {
+      hi = mid;
+    } else {
+      lo = mid;
+      flo = fm;
     }
 
-    if (list15.length !== list1.length) {
-      details.push({
-        event: key,
-        status: "イベント数不一致",
-        count15min: list15.length,
-        count1min: list1.length
-      });
+    if (hi - lo < 100) break;
+  }
+
+  return (lo + hi) / 2;
+}
+
+// ======================================
+// 重複イベントの除去
+// ======================================
+
+function removeDuplicates(events) {
+  events.sort((a, b) =>
+    a.timestamp - b.timestamp
+  );
+
+  const result = [];
+
+  for (const event of events) {
+    const duplicate = result.some(existing =>
+      existing.body === event.body &&
+      existing.aspect === event.aspect &&
+      Math.abs(
+        existing.timestamp - event.timestamp
+      ) < 2000
+    );
+
+    if (!duplicate) result.push(event);
+  }
+
+  return result;
+}
+
+// ======================================
+// 検出結果の照合
+// ======================================
+
+function compareEvents(reference, candidate) {
+  const used = new Set();
+  const missing = [];
+  const extra = [];
+
+  for (const ref of reference) {
+    let bestIndex = -1;
+    let bestDiff = Infinity;
+
+    candidate.forEach((item, index) => {
+      if (used.has(index)) return;
+
+      if (
+        item.body !== ref.body ||
+        item.aspect !== ref.aspect
+      ) return;
+
+      const diff = Math.abs(
+        item.timestamp - ref.timestamp
+      );
+
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestIndex = index;
+      }
+    });
+
+    if (bestIndex >= 0 && bestDiff <= 120000) {
+      used.add(bestIndex);
+    } else {
+      missing.push(ref);
     }
   }
 
-  const matched = details.filter(
-    item => item.differenceSeconds !== undefined
-  );
-
-  return {
-    eventCount15min: events15.length,
-    eventCount1min: events1.length,
-    matchedEvents: matched.length,
-    missingFrom15min: Math.max(
-      0,
-      events1.length - events15.length
-    ),
-    missingFrom1min: Math.max(
-      0,
-      events15.length - events1.length
-    ),
-    maxDifferenceSeconds: matched.length
-      ? Math.max(
-          ...matched.map(item => item.differenceSeconds)
-        )
-      : null,
-    details
-  };
-}
-
-// ========================================
-// アスペクト角度の実測検証エンジン
-// ========================================
-
-// 2天体の最小角距離を実測
-function getMeasuredAngularSeparation(bodyName, date) {
-
-  const moonLongitude = getLongitude("Moon", date);
-  const bodyLongitude = getLongitude(bodyName, date);
-
-  const relative = normalizeAngle(
-    moonLongitude - bodyLongitude
-  );
-
-  return Math.min(relative, 360 - relative);
-}
-
-// 各アスペクト時刻を実測検証
-function validateAspectEvents(events) {
-
-  const results = events.map(event => {
-
-    const eventTime = new Date(event.timestamp);
-
-    const beforeTime = new Date(
-      event.timestamp - 60000
-    );
-
-    const afterTime = new Date(
-      event.timestamp + 60000
-    );
-
-    const beforeAngle = getMeasuredAngularSeparation(
-      event.body,
-      beforeTime
-    );
-
-    const actualAngle = getMeasuredAngularSeparation(
-      event.body,
-      eventTime
-    );
-
-    const afterAngle = getMeasuredAngularSeparation(
-      event.body,
-      afterTime
-    );
-
-    const beforeError = Math.abs(
-      beforeAngle - event.angle
-    );
-
-    const actualError = Math.abs(
-      actualAngle - event.angle
-    );
-
-    const afterError = Math.abs(
-      afterAngle - event.angle
-    );
-
-    return {
-      body: event.body,
-      aspectAngle: event.angle,
-      datetimeUTC: eventTime.toISOString(),
-      datetimeJST: formatJST(eventTime),
-
-      measuredAngleBefore: Number(
-        beforeAngle.toFixed(9)
-      ),
-
-      measuredAngleAtEvent: Number(
-        actualAngle.toFixed(9)
-      ),
-
-      measuredAngleAfter: Number(
-        afterAngle.toFixed(9)
-      ),
-
-      errorBeforeDegrees: Number(
-        beforeError.toFixed(9)
-      ),
-
-      errorAtEventDegrees: Number(
-        actualError.toFixed(9)
-      ),
-
-      errorAtEventArcSeconds: Number(
-        (actualError * 3600).toFixed(6)
-      ),
-
-      errorAfterDegrees: Number(
-        afterError.toFixed(9)
-      ),
-
-      passed: actualError <= 0.001
-    };
+  candidate.forEach((item, index) => {
+    if (!used.has(index)) extra.push(item);
   });
 
-  const passedCount = results.filter(
-    result => result.passed
-  ).length;
+  return { missing, extra };
+}
+
+// ======================================
+// 角度誤差検証
+// ======================================
+
+function validateAngles(events) {
+  let passed = 0;
+  let failed = 0;
+  let maxError = 0;
+  const failures = [];
+
+  for (const event of events) {
+    const date = new Date(event.timestamp);
+
+    const relative = getRelativeLongitude(
+      event.body,
+      date
+    );
+
+    const separation = Math.abs(
+      signedDiff(relative, 0)
+    );
+
+    let error = Infinity;
+
+    for (const aspect of ASPECTS) {
+      error = Math.min(
+        error,
+        Math.abs(separation - aspect)
+      );
+    }
+
+    maxError = Math.max(maxError, error);
+
+    if (error <= 0.001) {
+      passed++;
+    } else {
+      failed++;
+      failures.push({
+        ...event,
+        error
+      });
+    }
+  }
 
   return {
-    totalEvents: results.length,
-    passedCount,
-    failedCount: results.length - passedCount,
-    toleranceDegrees: 0.001,
-    toleranceArcSeconds: 3.6,
-
-    status:
-      passedCount === results.length
-        ? "ALL_PASSED"
-        : "CHECK_REQUIRED",
-
-    details: results
+    passed,
+    failed,
+    maxError,
+    failures
   };
 }
 
-// ========================================
-// ボイドタイム計算
-// ========================================
+// ======================================
+// 逆行・順行の切り替わり確認
+// ======================================
 
-function calculateVoC(events, ingress, currentTime) {
+function checkDirectionChanges() {
+  const changes = [];
 
-  const ingressTime = ingress.timestamp;
+  const intervalMs = 6 * 60 * 60 * 1000;
 
-  // 星座移動前に発生した最後のアスペクト
-  const previousEvents = events.filter(event =>
-    event.timestamp < ingressTime
-  );
+  for (const body of BODIES) {
+    let previousTime = START.getTime();
+    let previousLongitude = getLongitude(
+      body,
+      new Date(previousTime)
+    );
 
-  const lastAspect = previousEvents.length
-    ? previousEvents[previousEvents.length - 1]
-    : null;
+    let previousDirection = 0;
 
-  const voidStart = lastAspect
-    ? lastAspect.timestamp
-    : null;
+    for (
+      let time = previousTime + intervalMs;
+      time <= END.getTime();
+      time += intervalMs
+    ) {
+      const longitude = getLongitude(
+        body,
+        new Date(time)
+      );
 
-  const voidEnd = ingressTime;
+      const delta = signedDiff(
+        longitude,
+        previousLongitude
+      );
 
-  const isActive =
-    voidStart !== null &&
-    currentTime >= voidStart &&
-    currentTime < voidEnd;
+      const direction =
+        delta > 0.000001 ? 1 :
+        delta < -0.000001 ? -1 : 0;
 
-  const durationHours = voidStart !== null
-    ? (voidEnd - voidStart) / 3600000
-    : null;
+      if (
+        direction !== 0 &&
+        previousDirection !== 0 &&
+        direction !== previousDirection
+      ) {
+        changes.push({
+          body,
+          timestamp: time,
+          from: previousDirection > 0 ? "順行" : "逆行",
+          to: direction > 0 ? "順行" : "逆行"
+        });
+      }
 
-  return {
-    status: isActive
-      ? "VOID_NOW"
-      : "VOID_INACTIVE",
+      if (direction !== 0) {
+        previousDirection = direction;
+      }
 
-    isActiveNow: isActive,
+      previousLongitude = longitude;
+    }
+  }
 
-    lastAspect: lastAspect
-      ? {
-          body: lastAspect.body,
-          angle: lastAspect.angle,
-          datetimeJST: formatJST(
-            new Date(lastAspect.timestamp)
-          )
-        }
-      : null,
-
-    voidStartJST: voidStart !== null
-      ? formatJST(new Date(voidStart))
-      : null,
-
-    voidEndJST: formatJST(
-      new Date(voidEnd)
-    ),
-
-    durationHours: durationHours !== null
-      ? Number(durationHours.toFixed(2))
-      : null
-  };
+  return changes;
 }
 
-// ========================================
-// メイン実行
-// ========================================
+// ======================================
+// 表示用
+// ======================================
 
-function runTest() {
+function formatDate(timestamp) {
+  return new Date(timestamp).toISOString();
+}
 
-  const outputElement =
-    document.getElementById("output");
+function describeEvents(events, limit = 15) {
+  if (events.length === 0) return "なし";
+
+  return events.slice(0, limit).map(event =>
+    `${event.body} ${event.aspect}° : ${
+      formatDate(event.timestamp)
+    }`
+  ).join("\n");
+}
+
+// ======================================
+// メイン検証
+// ======================================
+
+async function runTest() {
+  const button = document.getElementById("runButton");
+  button.disabled = true;
+  button.textContent = "検証中...";
+
+  output.textContent = "計算を開始しています...\n";
 
   try {
+    const results = {};
 
-    const currentLongitude =
-      getMoonLongitude(now);
+    for (const config of STEPS) {
+      output.textContent +=
+        `\n${config.label}で検出中...\n`;
 
-    const currentZodiac =
-      getZodiac(currentLongitude);
+      await new Promise(resolve =>
+        setTimeout(resolve, 30)
+      );
 
-    // 現在の月の星座移動区間
-    const previousIngress =
-      findPreviousIngress(now);
+      const events = scanAspectEvents(
+        config.minutes
+      );
 
-    const nextIngress =
-      findNextIngress(now);
+      results[config.minutes] = events;
 
-    const start = new Date(
-      previousIngress.timestamp
+      output.textContent +=
+        `${config.label}: ${events.length}件\n`;
+    }
+
+    // 1分間隔を比較基準とする
+    const reference = results[1];
+
+    const comparison15 = compareEvents(
+      reference,
+      results[15]
     );
 
-    const end = new Date(
-      nextIngress.timestamp
+    const comparison5 = compareEvents(
+      reference,
+      results[5]
     );
 
-    // 15分刻み・1分刻み
-    const events15 = calculateAllEvents(
-      start,
-      end,
-      15
-    );
+    const angleCheck = validateAngles(reference);
 
-    const events1 = calculateAllEvents(
-      start,
-      end,
-      1
-    );
+    const directionChanges =
+      checkDirectionChanges();
 
-    // 計算結果比較
-    const comparison = compareEvents(
-      events15,
-      events1
-    );
+    // 重複確認
+    const duplicateCount =
+      reference.length -
+      removeDuplicates([...reference]).length;
 
-    // 角度の実測検証
-    const angleValidation =
-      validateAspectEvents(events1);
+    let report = "";
 
-    // ボイドタイム
-    const voidCalculation = calculateVoC(
-      events1,
-      nextIngress,
-      now.getTime()
-    );
+    report += "================================\n";
+    report += "アスペクト検出漏れ検証結果\n";
+    report += "================================\n\n";
 
-    // 出力
-    const output = {
+    report += `検証期間: ${START.toISOString()} ～ ${END.toISOString()}\n\n`;
 
-      status: "SUCCESS",
+    report += "【検出件数】\n";
+    report += `15分間隔: ${results[15].length}件\n`;
+    report += `5分間隔 : ${results[5].length}件\n`;
+    report += `1分間隔 : ${results[1].length}件\n\n`;
 
-      calculation: {
-        zodiacSystem: "Tropical Zodiac",
-        coordinateSystem: "Geocentric Ecliptic",
-        timezone: "Asia/Tokyo",
-        testTimeUTC: now.toISOString(),
-        aspectAngles: ASPECTS,
-        calculationBodies: BODIES,
-        searchMethod:
-          "Angular scan + bisection"
-      },
+    report += "【15分間隔 vs 1分間隔】\n";
+    report += `1分側で見つかった未検出: ${comparison15.missing.length}件\n`;
+    report += `15分側だけの追加検出: ${comparison15.extra.length}件\n\n`;
 
-      current: {
-        datetimeUTC: now.toISOString(),
-        longitude: currentLongitude,
-        sign: currentZodiac.sign,
-        degree: currentZodiac.degree,
-        minute: currentZodiac.minute
-      },
+    report += "【5分間隔 vs 1分間隔】\n";
+    report += `1分側で見つかった未検出: ${comparison5.missing.length}件\n`;
+    report += `5分側だけの追加検出: ${comparison5.extra.length}件\n\n`;
 
-      currentSignPeriod: {
-        previousIngress: {
-          sign: previousIngress.sign,
-          datetimeJST: formatJST(
-            new Date(previousIngress.timestamp)
-          )
-        },
+    report += "【角度精度】\n";
+    report += `合格: ${angleCheck.passed}件\n`;
+    report += `不合格: ${angleCheck.failed}件\n`;
+    report += `最大角度誤差: ${angleCheck.maxError.toFixed(9)}°\n`;
+    report += `許容誤差: 0.001°\n\n`;
 
-        nextIngress: {
-          sign: nextIngress.sign,
-          boundaryLongitude:
-            nextIngress.boundaryLongitude,
-          datetimeUTC: new Date(
-            nextIngress.timestamp
-          ).toISOString(),
-          datetimeJST: formatJST(
-            new Date(nextIngress.timestamp)
-          )
-        }
-      },
+    report += "【重複検出】\n";
+    report += `重複件数: ${duplicateCount}件\n\n`;
 
-      aspectEvents: events1.map(event => ({
-        body: event.body,
-        angle: event.angle,
-        datetimeUTC: new Date(
-          event.timestamp
-        ).toISOString(),
-        datetimeJST: formatJST(
-          new Date(event.timestamp)
-        )
-      })),
+    report += "【順行・逆行の方向変化】\n";
+    report += `検出件数: ${directionChanges.length}件\n`;
 
-      comparison,
+    for (const change of directionChanges) {
+      report +=
+        `${change.body}: ${change.from} → ${change.to} / ${formatDate(change.timestamp)}\n`;
+    }
 
-      angleValidation,
+    report += "\n【15分間隔で見落としたイベント】\n";
+    report += describeEvents(comparison15.missing);
+    report += "\n\n【5分間隔で見落としたイベント】\n";
+    report += describeEvents(comparison5.missing);
 
-      voidCalculation
+    report += "\n\n【角度検証の不合格イベント】\n";
+    report += angleCheck.failures.length
+      ? angleCheck.failures.slice(0, 15).map(event =>
+          `${event.body} ${event.aspect}° / 誤差 ${event.error}°`
+        ).join("\n")
+      : "なし";
 
-    };
+    report += "\n\n================================\n";
+    report += "判定の目安\n";
+    report += "================================\n";
 
-    outputElement.textContent =
-      JSON.stringify(output, null, 2);
+    if (
+      comparison15.missing.length === 0 &&
+      comparison5.missing.length === 0 &&
+      angleCheck.failed === 0 &&
+      duplicateCount === 0
+    ) {
+      report += "基本検証: PASS\n";
+    } else {
+      report += "基本検証: 要確認\n";
+    }
+
+    report += "\n※ 1分間隔の結果を比較基準としています。\n";
+    report += "※ 同じ計算ロジック同士の比較であり、絶対的な検出漏れゼロの証明ではありません。\n";
+    report += "※ 接触して反転するだけの接線的なアスペクトは、通常の符号反転検出では見落とす可能性があります。\n";
+    report += "※ 方向変化は6時間ごとのサンプリングによる参考値です。\n";
+
+    output.textContent = report;
 
   } catch (error) {
-
-    outputElement.textContent =
-      JSON.stringify({
-        status: "ERROR",
-        message: error.message,
-        stack: error.stack
-      }, null, 2);
-
+    output.textContent =
+      "ERROR:\n" +
+      error.stack;
+  } finally {
+    button.disabled = false;
+    button.textContent = "もう一度検証する";
   }
 }
 
-// ページ読み込み時に実行
-runTest();
-
 </script>
-
 </body>
 </html>
