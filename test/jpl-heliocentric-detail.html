@@ -4,58 +4,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JPL Heliocentric Check</title>
+<title>JPL Heliocentric Detail Check</title>
 <script src="../astronomy/astronomy.browser.min.js"></script>
 <style>
-  body {
-    font-family: system-ui, sans-serif;
-    max-width: 900px;
-    margin: 30px auto;
-    padding: 0 16px;
-    line-height: 1.6;
-  }
-  input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px;
-    margin: 4px 0 12px;
-  }
-  button {
-    padding: 10px 18px;
-    cursor: pointer;
-  }
-  pre {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    background: #f3f3f3;
-    padding: 14px;
-    border-radius: 8px;
-  }
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 16px;
+  line-height: 1.6;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f3f3f3;
+  padding: 14px;
+  border-radius: 8px;
+}
+button {
+  padding: 10px 18px;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
-<h1>JPL Heliocentric Check</h1>
-<p>
-JPL Horizonsの水星・地球のヘリオセントリック座標と、
-Astronomy Engineの計算結果を比較します。
-</p>
 
-<h2>JPL Horizons データ</h2>
-<p>時刻はTDB。座標はEcliptic J2000.0、単位はAUです。</p>
-
-<label>JPL 水星 X</label>
-<input id="mx" value="0.07202231785201493">
-<label>JPL 水星 Y</label>
-<input id="my" value="0.3026953212408176">
-<label>JPL 水星 Z</label>
-<input id="mz" value="0.01793715221654842">
-
-<label>JPL 地球 X</label>
-<input id="ex" value="0.6692183912465384">
-<label>JPL 地球 Y</label>
-<input id="ey" value="0.7337008454409786">
-<label>JPL 地球 Z</label>
-<input id="ez" value="0.0002250462585961101">
+<h1>JPL Heliocentric Detail Check</h1>
+<p>JPL HorizonsとAstronomy Engineのヘリオセントリック座標を個別に比較します。</p>
 
 <button onclick="compare()">比較する</button>
 
@@ -66,18 +41,23 @@ Astronomy Engineの計算結果を比較します。
 const DEG = Math.PI / 180;
 const OBLIQUITY = 23.439291111 * DEG;
 
-// JPLのTDB時刻をUTCに変換する。
-// 2026年11月時点の TDB - UTC は約69.184秒。
-const jplTdb = new Date("2026-11-10T04:21:51.295Z");
-const utcDate = new Date(jplTdb.getTime() - 69.184 * 1000);
+// JPLのTDB時刻に対応するUTC時刻（約69.184秒差）
+const utcDate = new Date("2026-11-10T04:21:51.295Z");
+utcDate.setTime(utcDate.getTime() - 69.184 * 1000);
 
-function readVector(prefix) {
-  return {
-    x: Number(document.getElementById(prefix + "x").value),
-    y: Number(document.getElementById(prefix + "y").value),
-    z: Number(document.getElementById(prefix + "z").value)
-  };
-}
+// JPL Horizonsの水星ヘリオセントリック座標（2行目）
+const jplMercury = {
+  x: 0.07202231785201493,
+  y: 0.3026953212408176,
+  z: 0.01793715221654842
+};
+
+// JPL Horizonsの地球ヘリオセントリック座標（2行目）
+const jplEarth = {
+  x: 0.6692183912465384,
+  y: 0.7337008454409786,
+  z: 0.0002250462585961101
+};
 
 function equatorialToEcliptic(v) {
   return {
@@ -105,59 +85,55 @@ Y = ${v.y.toFixed(12)}
 Z = ${v.z.toFixed(12)}`;
 }
 
+function compareBody(name, jpl, ae) {
+  const delta = subtract(ae, jpl);
+  const dist = distance(delta);
+
+  return `【${name}】
+
+JPL:
+${format(jpl)}
+
+Astronomy Engine:
+${format(ae)}
+
+差（AE - JPL）:
+${format(delta)}
+
+3D距離差: ${dist.toExponential(9)} AU
+距離: ${(dist * 149597870.7).toFixed(3)} km
+
+`;
+}
+
 function compare() {
   const result = document.getElementById("result");
 
   try {
-    const jplMercury = readVector("m");
-    const jplEarth = readVector("e");
-    const jplGeo = subtract(jplMercury, jplEarth);
-
-    const aeMercuryEq = Astronomy.HelioVector(
-      Astronomy.Body.Mercury, utcDate
-    );
-    const aeEarthEq = Astronomy.HelioVector(
-      Astronomy.Body.Earth, utcDate
+    const aeMercury = equatorialToEcliptic(
+      Astronomy.HelioVector(Astronomy.Body.Mercury, utcDate)
     );
 
-    const aeMercury = equatorialToEcliptic(aeMercuryEq);
-    const aeEarth = equatorialToEcliptic(aeEarthEq);
-    const aeGeo = subtract(aeMercury, aeEarth);
-
-    const delta = subtract(aeGeo, jplGeo);
-    const dist = distance(delta);
-
-    const jplLon = Math.atan2(jplGeo.y, jplGeo.x) / DEG;
-    const aeLon = Math.atan2(aeGeo.y, aeGeo.x) / DEG;
-    const lonDiff = ((aeLon - jplLon + 540) % 360) - 180;
-    const arcsec = lonDiff * 3600;
+    const aeEarth = equatorialToEcliptic(
+      Astronomy.HelioVector(Astronomy.Body.Earth, utcDate)
+    );
 
     result.textContent =
-`JPLのTDB時刻: 2026-11-10 04:21:51.295
-比較に使用するUTC: ${utcDate.toISOString()}
+`JPL TDB: 2026-11-10 04:21:51.295
+使用UTC: ${utcDate.toISOString()}
 
-【JPL 水星 - 地球】
-${format(jplGeo)}
+${compareBody("水星", jplMercury, aeMercury)}
+${compareBody("地球", jplEarth, aeEarth)}
 
-【Astronomy Engine 水星 - 地球】
-${format(aeGeo)}
-
-【差（AE - JPL）】
-${format(delta)}
-
-3D距離: ${dist.toExponential(9)} AU
-距離: ${(dist * 149597870.7).toFixed(3)} km
-
-JPL黄経: ${jplLon.toFixed(9)}°
-AE黄経: ${aeLon.toFixed(9)}°
-黄経差: ${arcsec.toFixed(4)} 秒角
-
-※時刻変換は約69.184秒の近似です。
+※JPLはGEOMETRIC、Ecliptic J2000.0、AU。
+※UTC変換は約69.184秒の近似です。
 ※座標系・時刻系の差が残る可能性があります。`;
+
   } catch (error) {
     result.textContent = "エラー: " + error.message;
   }
 }
 </script>
+
 </body>
 </html>
