@@ -4,10 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Void of Course Moon Test</title>
+  <title>ボイドタイム計算精度比較テスト</title>
 </head>
 <body>
-  <h1>ボイドタイム計算テスト</h1>
+  <h1>ボイドタイム計算精度比較テスト</h1>
   <pre id="result">計算中...</pre>
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
@@ -42,13 +42,15 @@
     ];
 
     const HOUR = 60 * 60 * 1000;
-    const STEP = 15 * 60 * 1000;
+    const MINUTE = 60 * 1000;
+
+    // 検証用の固定時刻
+    const now = new Date("2026-11-10T04:24:49.276Z");
 
     function normalize(angle) {
       return ((angle % 360) + 360) % 360;
     }
 
-    // -180度〜180度に正規化
     function signedAngle(angle) {
       return normalize(angle + 180) - 180;
     }
@@ -93,7 +95,7 @@
       }).format(date);
     }
 
-    // 現在の星座への移動時刻を過去にさかのぼって探す
+    // 前の星座への移動時刻
     function findPreviousIngress(now, currentSign) {
       let right = now.getTime();
       let left = null;
@@ -124,7 +126,7 @@
       return new Date(right);
     }
 
-    // 次の星座への移動時刻を探す
+    // 次の星座への移動時刻
     function findNextIngress(now, currentSign) {
       let left = now.getTime();
       let right = null;
@@ -163,22 +165,26 @@
       return normalize(moon - planet);
     }
 
-    // ある天体とのアスペクト発生時刻を探索
+    // 指定した間隔でアスペクトを探索
     function findAspectEvents(
-      bodyName, bodyJapanese, start, end
+      bodyName, bodyJapanese, start, end, stepMinutes
     ) {
+      const STEP = stepMinutes * MINUTE;
       const events = [];
 
       let t0 = start.getTime();
+
       let raw0 = getRelativeLongitude(
         bodyName, new Date(t0)
       );
 
-      // 相対黄経を連続した角度に展開
       let u0 = raw0;
 
       while (t0 < end.getTime()) {
-        const t1 = Math.min(t0 + STEP, end.getTime());
+        const t1 = Math.min(
+          t0 + STEP,
+          end.getTime()
+        );
 
         const raw1 = getRelativeLongitude(
           bodyName, new Date(t1)
@@ -207,7 +213,6 @@
 
               for (let k = kStart; k <= kEnd; k++) {
                 const target = base + 360 * k;
-
                 const increasing = u1 > u0;
 
                 const crossed = increasing
@@ -216,17 +221,15 @@
 
                 if (!crossed) continue;
 
-                // 二分探索で正確な時刻を絞る
                 let lo = t0;
                 let hi = t1;
 
                 for (let j = 0; j < 40; j++) {
                   const mid = (lo + hi) / 2;
 
-                  const rawMid =
-                    getRelativeLongitude(
-                      bodyName, new Date(mid)
-                    );
+                  const rawMid = getRelativeLongitude(
+                    bodyName, new Date(mid)
+                  );
 
                   const uMid =
                     u0 + signedAngle(rawMid - raw0);
@@ -271,9 +274,134 @@
       return events;
     }
 
-    try {
-      const now = new Date("2026-11-10T04:24:49.276Z");
+    // 全天体のアスペクトを計算
+    function calculateAllEvents(start, end, stepMinutes) {
+      let events = [];
 
+      for (const [bodyName, japanese] of bodies) {
+        const found = findAspectEvents(
+          bodyName,
+          japanese,
+          start,
+          end,
+          stepMinutes
+        );
+
+        events = events.concat(found);
+      }
+
+      events.sort((a, b) => a.timestamp - b.timestamp);
+
+      return events;
+    }
+
+    // 15分間隔と1分間隔を比較
+    function compareEvents(events15, events1) {
+      const groups15 = {};
+      const groups1 = {};
+
+      function groupEvents(events, groups) {
+        for (const event of events) {
+          const key = event.body + "|" + event.angle;
+
+          if (!groups[key]) groups[key] = [];
+
+          groups[key].push(event);
+        }
+
+        for (const key in groups) {
+          groups[key].sort(
+            (a, b) => a.timestamp - b.timestamp
+          );
+        }
+      }
+
+      groupEvents(events15, groups15);
+      groupEvents(events1, groups1);
+
+      const keys = new Set([
+        ...Object.keys(groups15),
+        ...Object.keys(groups1)
+      ]);
+
+      const details = [];
+      let matched = 0;
+      let missing15 = 0;
+      let missing1 = 0;
+      let maxDifferenceSeconds = 0;
+
+      for (const key of keys) {
+        const list15 = groups15[key] || [];
+        const list1 = groups1[key] || [];
+
+        const count = Math.max(
+          list15.length, list1.length
+        );
+
+        for (let i = 0; i < count; i++) {
+          const a = list15[i];
+          const b = list1[i];
+
+          if (!a) {
+            missing15++;
+
+            details.push({
+              event: key,
+              status: "15分側で未検出",
+              oneMinuteTime: b.datetimeJST
+            });
+
+            continue;
+          }
+
+          if (!b) {
+            missing1++;
+
+            details.push({
+              event: key,
+              status: "1分側で未検出",
+              fifteenMinuteTime: a.datetimeJST
+            });
+
+            continue;
+          }
+
+          const differenceSeconds =
+            Math.abs(a.timestamp - b.timestamp) / 1000;
+
+          matched++;
+
+          maxDifferenceSeconds = Math.max(
+            maxDifferenceSeconds,
+            differenceSeconds
+          );
+
+          details.push({
+            event: key,
+            status: "一致",
+            time15min: a.datetimeJST,
+            time1min: b.datetimeJST,
+            differenceSeconds: Number(
+              differenceSeconds.toFixed(3)
+            )
+          });
+        }
+      }
+
+      return {
+        eventCount15min: events15.length,
+        eventCount1min: events1.length,
+        matchedEvents: matched,
+        missingFrom15min: missing15,
+        missingFrom1min: missing1,
+        maxDifferenceSeconds: Number(
+          maxDifferenceSeconds.toFixed(3)
+        ),
+        details
+      };
+    }
+
+    try {
       const currentSign = getSignIndex(now);
 
       const signStart = findPreviousIngress(
@@ -284,23 +412,23 @@
         now, currentSign
       );
 
-      // 現在の星座にいる間の全アスペクトを探索
-      let allEvents = [];
-
-      for (const [bodyName, japanese] of bodies) {
-        const events = findAspectEvents(
-          bodyName,
-          japanese,
-          signStart,
-          signEnd
-        );
-
-        allEvents = allEvents.concat(events);
-      }
-
-      allEvents.sort(
-        (a, b) => a.timestamp - b.timestamp
+      // 15分間隔で計算
+      const allEvents15 = calculateAllEvents(
+        signStart, signEnd, 15
       );
+
+      // 1分間隔で計算
+      const allEvents1 = calculateAllEvents(
+        signStart, signEnd, 1
+      );
+
+      // 結果を比較
+      const comparison = compareEvents(
+        allEvents15, allEvents1
+      );
+
+      // 既存のボイド判定は15分側を使用
+      const allEvents = allEvents15;
 
       const lastAspect =
         allEvents.length > 0
@@ -324,12 +452,14 @@
       const result = {
         status: "SUCCESS",
 
+        comparison: comparison,
+
         rules: {
           zodiac: "Tropical",
           coordinateSystem: "Geocentric Ecliptic",
           aspects: "0, 60, 90, 120, 180 degrees",
           bodies: "Sun through Pluto, excluding Moon",
-          searchIntervalMinutes: 15,
+          comparisonIntervals: [15, 1],
           method: "Angle crossing + bisection"
         },
 
