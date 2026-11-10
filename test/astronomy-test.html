@@ -109,7 +109,7 @@ function getLongitude(body, date) {
   const vector = Astronomy.GeoVector(
     Astronomy.Body[body],
     date,
-    true
+    false
   );
 
   return Astronomy.Ecliptic(vector).elon;
