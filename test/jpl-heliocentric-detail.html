@@ -87,6 +87,9 @@ const jplEarth = {
   z: -0.00004625215897568905
 };
 
+// J2000.0 の平均黄道傾斜角（ラジアン）
+const EPS = 23.439291111 * Math.PI / 180;
+
 // 黄道座標から赤道座標 EQJ に戻す
 function eclipticToEquatorial(v) {
   return {
@@ -219,9 +222,10 @@ AE: J2000平均赤道座標 EQJ
 ${mercuryResult}
 ${earthResult}
 ${relativeResult}
-※時刻変換は約69.184秒の近似です。
-※JPLの黄道座標を固定黄道傾斜角でEQJに戻しています。
-※相対位置は水星の位置から地球の位置を引いて計算しています。`;
+※JPLのTDBからTDB-TTの周期項を用いてTTを計算し、
+  Astronomy EngineのFromTerrestrialTimeに直接渡しています。
+※TDB-TTの変換は近似式です。
+※JPLの黄道座標を固定黄道傾斜角でEQJに変換しています。`;
 
   } catch (e) {
     document.getElementById("result").textContent =
