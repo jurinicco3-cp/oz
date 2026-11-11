@@ -243,6 +243,90 @@ ${format(delta)}
 `;
 }
 
+  function analyzeGeocentricMercury(
+  jplMercuryEq,
+  jplEarthEq,
+  aeMercury,
+  aeEarth
+) {
+  // 地球から見た水星の相対位置
+  const jplRelative = subtract(jplMercuryEq, jplEarthEq);
+  const aeRelative = subtract(aeMercury, aeEarth);
+
+  // 2つの相対位置の差
+  const delta = subtract(aeRelative, jplRelative);
+
+  const jplDistance = distance(jplRelative);
+  const aeDistance = distance(aeRelative);
+  const difference = distance(delta);
+
+  // JPLの相対位置を基準にした単位ベクトル
+  const ux = jplRelative.x / jplDistance;
+  const uy = jplRelative.y / jplDistance;
+  const uz = jplRelative.z / jplDistance;
+
+  // 距離方向のずれ
+  const radialAU =
+    delta.x * ux +
+    delta.y * uy +
+    delta.z * uz;
+
+  // 横方向のずれ
+  const transverseAU = Math.sqrt(
+    Math.max(0, difference * difference - radialAU * radialAU)
+  );
+
+  // 2つの方向ベクトルのなす角
+  const cx =
+    jplRelative.y * aeRelative.z -
+    jplRelative.z * aeRelative.y;
+
+  const cy =
+    jplRelative.z * aeRelative.x -
+    jplRelative.x * aeRelative.z;
+
+  const cz =
+    jplRelative.x * aeRelative.y -
+    jplRelative.y * aeRelative.x;
+
+  const crossMagnitude = Math.hypot(cx, cy, cz);
+
+  const dot =
+    jplRelative.x * aeRelative.x +
+    jplRelative.y * aeRelative.y +
+    jplRelative.z * aeRelative.z;
+
+  const angleRad = Math.atan2(crossMagnitude, dot);
+  const angleDeg = angleRad / DEG;
+  const angleArcsec = angleDeg * 3600;
+
+  return `
+【地球から見た水星：相対位置の差】
+
+JPL 地球・水星間距離:
+${(jplDistance * AU_KM).toFixed(3)} km
+
+AE 地球・水星間距離:
+${(aeDistance * AU_KM).toFixed(3)} km
+
+距離の差（AE - JPL）:
+${((aeDistance - jplDistance) * AU_KM).toFixed(3)} km
+
+距離方向のずれ:
+${(radialAU * AU_KM).toFixed(3)} km
+
+横方向のずれ:
+${(transverseAU * AU_KM).toFixed(3)} km
+
+見かけの方向の角度差:
+${angleDeg.toFixed(10)} 度
+${angleArcsec.toFixed(6)} 秒角
+
+位置全体の差:
+${(difference * AU_KM).toFixed(3)} km
+`;
+}
+
 function compare() {
   try {
     // Astronomy Engineの生データ
@@ -284,6 +368,13 @@ const aeEarthEcl = equatorialToEcliptic(aeEarth);
       aeMercury,
       aeEarth
     );
+
+    const geocentricResult = analyzeGeocentricMercury(
+  jplMercuryEq,
+  jplEarthEq,
+  aeMercury,
+  aeEarth
+);
 
     // 黄道座標同士の直接比較
 const eclipticResult =
@@ -328,6 +419,7 @@ AE: J2000平均赤道座標 EQJ
 ${mercuryResult}
 ${earthResult}
 ${relativeResult}
+${geocentricResult}
 ${eclipticResult}
 ${directionResult}
 
