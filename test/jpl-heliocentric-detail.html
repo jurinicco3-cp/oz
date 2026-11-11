@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JPL Coordinate Diagnostic</title>
+<title>JPL ICRF Coordinate Diagnostic</title>
 <script src="../astronomy/astronomy.browser.min.js"></script>
 <style>
 body {
@@ -28,8 +29,8 @@ pre {
 </head>
 <body>
 
-<h1>JPL Coordinate Diagnostic</h1>
-<p>EQJ座標とJPL黄道座標を比較します。</p>
+<h1>JPL ICRF Coordinate Diagnostic</h1>
+<p>JPL ICRF座標とAstronomy Engine EQJ座標を比較します。</p>
 
 <button onclick="compare()">比較する</button>
 
@@ -38,14 +39,11 @@ pre {
 
 <script>
 const DEG = Math.PI / 180;
-const EPS = 23.439291111 * DEG;
 const AU_KM = 149597870.7;
-
-// JPL TDB時刻からUTCへの近似変換
-
-// JPLのTDB時刻（2行目）
-const JPL_TDB_JD = 2461354.681843692;
 const J2000_JD = 2451545.0;
+
+// JPL TDB時刻
+const JPL_TDB_JD = 2461354.681843692;
 
 // TDB - TT の近似計算（秒）
 function tdbMinusTtSeconds(jdTdb) {
@@ -64,7 +62,6 @@ function tdbMinusTtSeconds(jdTdb) {
 
 const tdbMinusTt = tdbMinusTtSeconds(JPL_TDB_JD);
 
-// TT = TDB - (TDB - TT)
 const JPL_TT_JD =
   JPL_TDB_JD - tdbMinusTt / 86400;
 
@@ -73,37 +70,19 @@ const aeTime = Astronomy.AstroTime.FromTerrestrialTime(
   JPL_TT_JD - J2000_JD
 );
 
-// JPL 水星（ヘリオセントリック、黄道J2000）
+// JPL 水星（太陽中心・ICRF）
 const jplMercury = {
   x: 0.07307489017818641,
-  y: 0.2981736695058780,
-  z: 0.01766585379897668
+  y: 0.2665419200717218,
+  z: 0.1348147782015284
 };
 
-// JPL 地球（ヘリオセントリック、黄道J2000）
+// JPL 地球（太陽中心・ICRF）
 const jplEarth = {
   x: 0.6702709635727099,
-  y: 0.7291791937060391,
-  z: -0.00004625215897568905
+  y: 0.6690272283116131,
+  z: 0.2900083903109221
 };
-
-// 黄道座標から赤道座標 EQJ に戻す
-function eclipticToEquatorial(v) {
-  return {
-    x: v.x,
-    y: v.y * Math.cos(EPS) - v.z * Math.sin(EPS),
-    z: v.y * Math.sin(EPS) + v.z * Math.cos(EPS)
-  };
-}
-
-// 赤道座標 EQJ から黄道座標に戻す
-function equatorialToEcliptic(v) {
-  return {
-    x: v.x,
-    y: v.y * Math.cos(EPS) + v.z * Math.sin(EPS),
-    z: -v.y * Math.sin(EPS) + v.z * Math.cos(EPS)
-  };
-}
 
 // ベクトルの引き算
 function subtract(a, b) {
@@ -119,71 +98,21 @@ function distance(v) {
   return Math.hypot(v.x, v.y, v.z);
 }
 
-  
-// 距離差・角度差・方向のずれを調べる
-function analyzePosition(name, jpl, ae) {
-  const jplDistance = distance(jpl);
-  const aeDistance = distance(ae);
+// ベクトルの角度差
+function angleBetween(a, b) {
+  const cx = a.y * b.z - a.z * b.y;
+  const cy = a.z * b.x - a.x * b.z;
+  const cz = a.x * b.y - a.y * b.x;
 
-  // AEとJPLの位置の差
-  const delta = subtract(ae, jpl);
-  const totalKm = distance(delta) * AU_KM;
+  const cross = Math.hypot(cx, cy, cz);
 
-  // JPLの太陽方向を単位ベクトルにする
-  const ux = jpl.x / jplDistance;
-  const uy = jpl.y / jplDistance;
-  const uz = jpl.z / jplDistance;
-
-  // 距離方向のずれ（動径方向）
-  const radialAU =
-    delta.x * ux +
-    delta.y * uy +
-    delta.z * uz;
-
-  // 横方向のずれ
-  const transverseAU = Math.sqrt(
-    Math.max(0, distance(delta) ** 2 - radialAU ** 2)
-  );
-
-  // JPLとAEの方向の角度差
   const dot =
-    jpl.x * ae.x +
-    jpl.y * ae.y +
-    jpl.z * ae.z;
+    a.x * b.x +
+    a.y * b.y +
+    a.z * b.z;
 
-  const cosAngle = Math.max(
-    -1,
-    Math.min(1, dot / (jplDistance * aeDistance))
-  );
-
-  const angleRad = Math.acos(cosAngle);
-  const angleDeg = angleRad / DEG;
-  const angleArcsec = angleDeg * 3600;
-
-  return `【${name}：距離と方向の差】
-
-JPL太陽距離: ${(jplDistance * AU_KM).toFixed(3)} km
-AE太陽距離: ${(aeDistance * AU_KM).toFixed(3)} km
-
-太陽距離の差（AE - JPL）:
-${( (aeDistance - jplDistance) * AU_KM).toFixed(3)} km
-
-距離方向のずれ:
-${(radialAU * AU_KM).toFixed(3)} km
-
-横方向のずれ:
-${(transverseAU * AU_KM).toFixed(3)} km
-
-方向の角度差:
-${angleDeg.toFixed(9)} 度
-${angleArcsec.toFixed(3)} 秒角
-
-位置全体の差:
-${totalKm.toFixed(3)} km
-
-`;
+  return Math.atan2(cross, dot);
 }
-
 
 // 座標表示
 function format(v) {
@@ -192,17 +121,65 @@ Y = ${v.y.toFixed(12)}
 Z = ${v.z.toFixed(12)}`;
 }
 
+// 距離・方向の差を分析
+function analyzePosition(name, jpl, ae) {
+  const jplDistance = distance(jpl);
+  const aeDistance = distance(ae);
+
+  const delta = subtract(ae, jpl);
+  const totalKm = distance(delta) * AU_KM;
+
+  const ux = jpl.x / jplDistance;
+  const uy = jpl.y / jplDistance;
+  const uz = jpl.z / jplDistance;
+
+  const radialAU =
+    delta.x * ux +
+    delta.y * uy +
+    delta.z * uz;
+
+  const transverseAU = Math.sqrt(
+    Math.max(0, distance(delta) ** 2 - radialAU ** 2)
+  );
+
+  const angleRad = angleBetween(jpl, ae);
+  const angleDeg = angleRad / DEG;
+  const angleArcsec = angleDeg * 3600;
+
+  return `【${name}：距離と方向の差】
+
+JPL距離: ${(jplDistance * AU_KM).toFixed(3)} km
+AE距離: ${(aeDistance * AU_KM).toFixed(3)} km
+
+距離の差（AE - JPL）:
+${((aeDistance - jplDistance) * AU_KM).toFixed(3)} km
+
+距離方向のずれ:
+${(radialAU * AU_KM).toFixed(3)} km
+
+横方向のずれ:
+${(transverseAU * AU_KM).toFixed(3)} km
+
+方向の角度差:
+${angleDeg.toFixed(10)} 度
+${angleArcsec.toFixed(6)} 秒角
+
+位置全体の差:
+${totalKm.toFixed(3)} km
+
+`;
+}
+
 // 個別天体の比較
 function check(name, jpl, ae) {
-  const jplEq = eclipticToEquatorial(jpl);
-  const delta = subtract(ae, jplEq);
+  const delta = subtract(ae, jpl);
 
   return `【${name}】
 
-JPLからEQJに変換:
-${format(jplEq)}
+JPL（ICRF）:
+${format(jpl)}
 
-Astronomy Engine 生データ（EQJ）:
+Astronomy Engine（EQJ）:
 ${format(ae)}
 
 差（AE - JPL）:
@@ -214,94 +191,65 @@ ${format(delta)}
 `;
 }
 
-// 相対位置の比較
-function compareRelative(jplMercuryEq, jplEarthEq, aeMercury, aeEarth) {
-
-  // JPLの水星 - 地球
-  const jplRelative = subtract(jplMercuryEq, jplEarthEq);
-
-  // AEの水星 - 地球
+// 水星と地球の相対位置比較
+function compareRelative(jplMercury, jplEarth, aeMercury, aeEarth) {
+  const jplRelative = subtract(jplMercury, jplEarth);
   const aeRelative = subtract(aeMercury, aeEarth);
-
-  // 相対位置の差
   const delta = subtract(aeRelative, jplRelative);
 
   return `【水星 − 地球：相対位置比較】
 
-JPL 相対位置（EQJ）:
+JPL相対位置（ICRF）:
 ${format(jplRelative)}
 
-Astronomy Engine 相対位置（EQJ）:
+AE相対位置（EQJ）:
 ${format(aeRelative)}
 
 相対位置の差（AE - JPL）:
 ${format(delta)}
 
-3D相対位置差: ${distance(delta).toExponential(9)} AU
-距離: ${(distance(delta) * AU_KM).toFixed(3)} km
+3D相対位置差:
+${distance(delta).toExponential(9)} AU
+
+距離:
+${(distance(delta) * AU_KM).toFixed(3)} km
 
 `;
 }
 
-  function analyzeGeocentricMercury(
-  jplMercuryEq,
-  jplEarthEq,
+// 地球から見た水星の比較
+function analyzeGeocentricMercury(
+  jplMercury,
+  jplEarth,
   aeMercury,
   aeEarth
 ) {
-  // 地球から見た水星の相対位置
-  const jplRelative = subtract(jplMercuryEq, jplEarthEq);
+  const jplRelative = subtract(jplMercury, jplEarth);
   const aeRelative = subtract(aeMercury, aeEarth);
-
-  // 2つの相対位置の差
   const delta = subtract(aeRelative, jplRelative);
 
   const jplDistance = distance(jplRelative);
   const aeDistance = distance(aeRelative);
   const difference = distance(delta);
 
-  // JPLの相対位置を基準にした単位ベクトル
   const ux = jplRelative.x / jplDistance;
   const uy = jplRelative.y / jplDistance;
   const uz = jplRelative.z / jplDistance;
 
-  // 距離方向のずれ
   const radialAU =
     delta.x * ux +
     delta.y * uy +
     delta.z * uz;
 
-  // 横方向のずれ
   const transverseAU = Math.sqrt(
-    Math.max(0, difference * difference - radialAU * radialAU)
+    Math.max(0, difference ** 2 - radialAU ** 2)
   );
 
-  // 2つの方向ベクトルのなす角
-  const cx =
-    jplRelative.y * aeRelative.z -
-    jplRelative.z * aeRelative.y;
-
-  const cy =
-    jplRelative.z * aeRelative.x -
-    jplRelative.x * aeRelative.z;
-
-  const cz =
-    jplRelative.x * aeRelative.y -
-    jplRelative.y * aeRelative.x;
-
-  const crossMagnitude = Math.hypot(cx, cy, cz);
-
-  const dot =
-    jplRelative.x * aeRelative.x +
-    jplRelative.y * aeRelative.y +
-    jplRelative.z * aeRelative.z;
-
-  const angleRad = Math.atan2(crossMagnitude, dot);
+  const angleRad = angleBetween(jplRelative, aeRelative);
   const angleDeg = angleRad / DEG;
   const angleArcsec = angleDeg * 3600;
 
-  return `
-【地球から見た水星：相対位置の差】
+  return `【地球から見た水星：相対位置の差】
 
 JPL 地球・水星間距離:
 ${(jplDistance * AU_KM).toFixed(3)} km
@@ -318,18 +266,20 @@ ${(radialAU * AU_KM).toFixed(3)} km
 横方向のずれ:
 ${(transverseAU * AU_KM).toFixed(3)} km
 
-見かけの方向の角度差:
+方向の角度差:
 ${angleDeg.toFixed(10)} 度
 ${angleArcsec.toFixed(6)} 秒角
 
 位置全体の差:
 ${(difference * AU_KM).toFixed(3)} km
+
 `;
 }
 
+// メイン比較処理
 function compare() {
   try {
-    // Astronomy Engineの生データ
+    // Astronomy Engineの生データ（EQJ）
     const aeMercury = Astronomy.HelioVector(
       Astronomy.Body.Mercury,
       aeTime
@@ -339,14 +289,6 @@ function compare() {
       Astronomy.Body.Earth,
       aeTime
     );
-
-    // AEのEQJ座標を黄道座標に変換
-const aeMercuryEcl = equatorialToEcliptic(aeMercury);
-const aeEarthEcl = equatorialToEcliptic(aeEarth);
-
-    // JPL座標をEQJに変換
-    const jplMercuryEq = eclipticToEquatorial(jplMercury);
-    const jplEarthEq = eclipticToEquatorial(jplEarth);
 
     // 個別比較
     const mercuryResult = check(
@@ -363,48 +305,24 @@ const aeEarthEcl = equatorialToEcliptic(aeEarth);
 
     // 相対位置比較
     const relativeResult = compareRelative(
-      jplMercuryEq,
-      jplEarthEq,
+      jplMercury,
+      jplEarth,
       aeMercury,
       aeEarth
     );
 
+    // 地球から見た水星の比較
     const geocentricResult = analyzeGeocentricMercury(
-  jplMercuryEq,
-  jplEarthEq,
-  aeMercury,
-  aeEarth
-);
+      jplMercury,
+      jplEarth,
+      aeMercury,
+      aeEarth
+    );
 
-    // 黄道座標同士の直接比較
-const eclipticResult =
-`【黄道座標同士の直接比較】
-
-水星：
-JPL:
-${format(jplMercury)}
-
-AE:
-${format(aeMercuryEcl)}
-
-差（AE - JPL）:
-${format(subtract(aeMercuryEcl, jplMercury))}
-
-地球：
-JPL:
-${format(jplEarth)}
-
-AE:
-${format(aeEarthEcl)}
-
-差（AE - JPL）:
-${format(subtract(aeEarthEcl, jplEarth))}
-
-`;
-// 距離と方向の差を分析
-const directionResult =
-  analyzePosition("水星", jplMercury, aeMercuryEcl) +
-  analyzePosition("地球", jplEarth, aeEarthEcl);
+    // 距離と方向の分析
+    const directionResult =
+      analyzePosition("水星", jplMercury, aeMercury) +
+      analyzePosition("地球", jplEarth, aeEarth);
 
     document.getElementById("result").textContent =
 `JPL TDB: 2026-11-10 04:21:51.295
@@ -413,20 +331,20 @@ TDB-TT補正: ${tdbMinusTt.toFixed(9)} 秒
 AE入力TT JD: ${(J2000_JD + aeTime.tt).toFixed(12)}
 
 【座標系】
-JPL: ICRF基準の黄道座標
+JPL: ICRF
 AE: J2000平均赤道座標 EQJ
 
 ${mercuryResult}
 ${earthResult}
 ${relativeResult}
 ${geocentricResult}
-${eclipticResult}
 ${directionResult}
 
-※JPLのTDBからTDB-TTの周期項を用いてTTを計算し、
-  Astronomy EngineのFromTerrestrialTimeに直接渡しています。
-※TDB-TTの変換は近似式です。
-※JPLの黄道座標を固定黄道傾斜角でEQJに変換しています。`;
+※JPLはDE441の太陽中心ICRF座標です。
+※AEはHelioVectorによるEQJ座標です。
+※ICRFとEQJは厳密には同一ではありません。
+※今回の直接比較には座標系の微小な違いも含まれます。
+※TDB-TT変換には近似式を使用しています。`;
 
   } catch (e) {
     document.getElementById("result").textContent =
