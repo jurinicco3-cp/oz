@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JPL ICRF Coordinate Diagnostic</title>
+<title>JPL ICRF to EQJ Diagnostic</title>
 <script src="../astronomy/astronomy.browser.min.js"></script>
 <style>
 body {
@@ -29,8 +29,8 @@ pre {
 </head>
 <body>
 
-<h1>JPL ICRF Coordinate Diagnostic</h1>
-<p>JPL ICRF座標とAstronomy Engine EQJ座標を比較します。</p>
+<h1>JPL ICRF to EQJ Diagnostic</h1>
+<p>JPLのICRF座標をJ2000平均赤道座標に変換して比較します。</p>
 
 <button onclick="compare()">比較する</button>
 
@@ -61,28 +61,71 @@ function tdbMinusTtSeconds(jdTdb) {
 }
 
 const tdbMinusTt = tdbMinusTtSeconds(JPL_TDB_JD);
-
 const JPL_TT_JD =
   JPL_TDB_JD - tdbMinusTt / 86400;
 
-// Astronomy EngineにTTを直接渡す
+// Astronomy EngineにTTを渡す
 const aeTime = Astronomy.AstroTime.FromTerrestrialTime(
   JPL_TT_JD - J2000_JD
 );
 
 // JPL 水星（太陽中心・ICRF）
-const jplMercury = {
+const jplMercuryICRF = {
   x: 0.07307489017818641,
   y: 0.2665419200717218,
   z: 0.1348147782015284
 };
 
 // JPL 地球（太陽中心・ICRF）
-const jplEarth = {
+const jplEarthICRF = {
   x: 0.6702709635727099,
   y: 0.6690272283116131,
   z: 0.2900083903109221
 };
+
+// IAU 2000 SOFA frame-bias matrix
+// GCRS / ICRS-oriented axes -> mean J2000 equator and equinox
+const FRAME_BIAS = [
+  [
+    0.9999999999999942,
+   -0.0000000707827974,
+    0.0000000805621715
+  ],
+  [
+    0.0000000707827948,
+    0.9999999999999969,
+    0.0000000330604145
+  ],
+  [
+   -0.0000000805621738,
+   -0.0000000330604117,
+    0.9999999999999966
+  ]
+];
+
+// ICRF座標をJ2000平均赤道座標へ変換
+function icrfToEqj(v) {
+  return {
+    x:
+      FRAME_BIAS[0][0] * v.x +
+      FRAME_BIAS[0][1] * v.y +
+      FRAME_BIAS[0][2] * v.z,
+
+    y:
+      FRAME_BIAS[1][0] * v.x +
+      FRAME_BIAS[1][1] * v.y +
+      FRAME_BIAS[1][2] * v.z,
+
+    z:
+      FRAME_BIAS[2][0] * v.x +
+      FRAME_BIAS[2][1] * v.y +
+      FRAME_BIAS[2][2] * v.z
+  };
+}
+
+// JPL座標をEQJに変換
+const jplMercuryEQJ = icrfToEqj(jplMercuryICRF);
+const jplEarthEQJ = icrfToEqj(jplEarthICRF);
 
 // ベクトルの引き算
 function subtract(a, b) {
@@ -176,7 +219,7 @@ function check(name, jpl, ae) {
 
   return `【${name}】
 
-JPL（ICRF）:
+JPL（ICRF → EQJ変換後）:
 ${format(jpl)}
 
 Astronomy Engine（EQJ）:
@@ -199,7 +242,7 @@ function compareRelative(jplMercury, jplEarth, aeMercury, aeEarth) {
 
   return `【水星 − 地球：相対位置比較】
 
-JPL相対位置（ICRF）:
+JPL相対位置（EQJ変換後）:
 ${format(jplRelative)}
 
 AE相対位置（EQJ）:
@@ -279,7 +322,6 @@ ${(difference * AU_KM).toFixed(3)} km
 // メイン比較処理
 function compare() {
   try {
-    // Astronomy Engineの生データ（EQJ）
     const aeMercury = Astronomy.HelioVector(
       Astronomy.Body.Mercury,
       aeTime
@@ -290,39 +332,35 @@ function compare() {
       aeTime
     );
 
-    // 個別比較
     const mercuryResult = check(
       "Mercury",
-      jplMercury,
+      jplMercuryEQJ,
       aeMercury
     );
 
     const earthResult = check(
       "Earth",
-      jplEarth,
+      jplEarthEQJ,
       aeEarth
     );
 
-    // 相対位置比較
     const relativeResult = compareRelative(
-      jplMercury,
-      jplEarth,
+      jplMercuryEQJ,
+      jplEarthEQJ,
       aeMercury,
       aeEarth
     );
 
-    // 地球から見た水星の比較
     const geocentricResult = analyzeGeocentricMercury(
-      jplMercury,
-      jplEarth,
+      jplMercuryEQJ,
+      jplEarthEQJ,
       aeMercury,
       aeEarth
     );
 
-    // 距離と方向の分析
     const directionResult =
-      analyzePosition("水星", jplMercury, aeMercury) +
-      analyzePosition("地球", jplEarth, aeEarth);
+      analyzePosition("水星", jplMercuryEQJ, aeMercury) +
+      analyzePosition("地球", jplEarthEQJ, aeEarth);
 
     document.getElementById("result").textContent =
 `JPL TDB: 2026-11-10 04:21:51.295
@@ -331,8 +369,29 @@ TDB-TT補正: ${tdbMinusTt.toFixed(9)} 秒
 AE入力TT JD: ${(J2000_JD + aeTime.tt).toFixed(12)}
 
 【座標系】
-JPL: ICRF
-AE: J2000平均赤道座標 EQJ
+JPL元データ: ICRF
+JPL変換後: J2000平均赤道座標（EQJ相当）
+AE: J2000平均赤道座標（EQJ）
+
+【JPL元データ：ICRF】
+
+Mercury:
+${format(jplMercuryICRF)}
+
+Earth:
+${format(jplEarthICRF)}
+
+【JPL変換後：EQJ】
+
+Mercury:
+${format(jplMercuryEQJ)}
+
+Earth:
+${format(jplEarthEQJ)}
+
+【フレーム変換】
+IAU 2000 SOFA frame-bias matrix
+GCRS / ICRS-oriented axes → mean J2000
 
 ${mercuryResult}
 ${earthResult}
@@ -341,10 +400,12 @@ ${geocentricResult}
 ${directionResult}
 
 ※JPLはDE441の太陽中心ICRF座標です。
+※JPL座標にはIAU 2000のフレームバイアス変換を適用しています。
 ※AEはHelioVectorによるEQJ座標です。
-※ICRFとEQJは厳密には同一ではありません。
-※今回の直接比較には座標系の微小な違いも含まれます。
-※TDB-TT変換には近似式を使用しています。`;
+※ICRFとFK5/J2000の実現差は完全には除去されていません。
+※TDB-TT変換には近似式を使用しています。
+※この結果は座標系を標準的に合わせた比較であり、
+  最終的な精度評価には残存フレーム差も考慮が必要です。`;
 
   } catch (e) {
     document.getElementById("result").textContent =
