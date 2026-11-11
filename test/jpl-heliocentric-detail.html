@@ -119,6 +119,72 @@ function distance(v) {
   return Math.hypot(v.x, v.y, v.z);
 }
 
+  
+// 距離差・角度差・方向のずれを調べる
+function analyzePosition(name, jpl, ae) {
+  const jplDistance = distance(jpl);
+  const aeDistance = distance(ae);
+
+  // AEとJPLの位置の差
+  const delta = subtract(ae, jpl);
+  const totalKm = distance(delta) * AU_KM;
+
+  // JPLの太陽方向を単位ベクトルにする
+  const ux = jpl.x / jplDistance;
+  const uy = jpl.y / jplDistance;
+  const uz = jpl.z / jplDistance;
+
+  // 距離方向のずれ（動径方向）
+  const radialAU =
+    delta.x * ux +
+    delta.y * uy +
+    delta.z * uz;
+
+  // 横方向のずれ
+  const transverseAU = Math.sqrt(
+    Math.max(0, distance(delta) ** 2 - radialAU ** 2)
+  );
+
+  // JPLとAEの方向の角度差
+  const dot =
+    jpl.x * ae.x +
+    jpl.y * ae.y +
+    jpl.z * ae.z;
+
+  const cosAngle = Math.max(
+    -1,
+    Math.min(1, dot / (jplDistance * aeDistance))
+  );
+
+  const angleRad = Math.acos(cosAngle);
+  const angleDeg = angleRad / DEG;
+  const angleArcsec = angleDeg * 3600;
+
+  return `【${name}：距離と方向の差】
+
+JPL太陽距離: ${(jplDistance * AU_KM).toFixed(3)} km
+AE太陽距離: ${(aeDistance * AU_KM).toFixed(3)} km
+
+太陽距離の差（AE - JPL）:
+${( (aeDistance - jplDistance) * AU_KM).toFixed(3)} km
+
+距離方向のずれ:
+${(radialAU * AU_KM).toFixed(3)} km
+
+横方向のずれ:
+${(transverseAU * AU_KM).toFixed(3)} km
+
+方向の角度差:
+${angleDeg.toFixed(9)} 度
+${angleArcsec.toFixed(3)} 秒角
+
+位置全体の差:
+${totalKm.toFixed(3)} km
+
+`;
+}
+
+
 // 座標表示
 function format(v) {
   return `X = ${v.x.toFixed(12)}
@@ -244,6 +310,10 @@ ${format(aeEarthEcl)}
 ${format(subtract(aeEarthEcl, jplEarth))}
 
 `;
+// 距離と方向の差を分析
+const directionResult =
+  analyzePosition("水星", jplMercury, aeMercuryEcl) +
+  analyzePosition("地球", jplEarth, aeEarthEcl);
 
     document.getElementById("result").textContent =
 `JPL TDB: 2026-11-10 04:21:51.295
@@ -259,6 +329,7 @@ ${mercuryResult}
 ${earthResult}
 ${relativeResult}
 ${eclipticResult}
+${directionResult}
 
 ※JPLのTDBからTDB-TTの周期項を用いてTTを計算し、
   Astronomy EngineのFromTerrestrialTimeに直接渡しています。
