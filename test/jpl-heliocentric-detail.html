@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -43,8 +42,36 @@ const EPS = 23.439291111 * DEG;
 const AU_KM = 149597870.7;
 
 // JPL TDB時刻からUTCへの近似変換
-const utcDate = new Date("2026-11-10T04:21:51.295Z");
-utcDate.setTime(utcDate.getTime() - 69.184 * 1000);
+
+// JPLのTDB時刻（2行目）
+const JPL_TDB_JD = 2461354.681843692;
+const J2000_JD = 2451545.0;
+
+// TDB - TT の近似計算（秒）
+function tdbMinusTtSeconds(jdTdb) {
+  const T = (jdTdb - J2000_JD) / 36525;
+
+  return (
+    0.001657 * Math.sin(628.3076 * T + 6.2401) +
+    0.000022 * Math.sin(575.3385 * T + 4.2970) +
+    0.000014 * Math.sin(1256.6152 * T + 6.1969) +
+    0.000005 * Math.sin(606.9777 * T + 4.0212) +
+    0.000005 * Math.sin(52.9691 * T + 0.4444) +
+    0.000002 * Math.sin(21.3299 * T + 5.5431) +
+    0.000102 * T * Math.sin(628.3076 * T + 4.2490)
+  );
+}
+
+const tdbMinusTt = tdbMinusTtSeconds(JPL_TDB_JD);
+
+// TT = TDB - (TDB - TT)
+const JPL_TT_JD =
+  JPL_TDB_JD - tdbMinusTt / 86400;
+
+// Astronomy EngineにTTを直接渡す
+const aeTime = Astronomy.AstroTime.FromTerrestrialTime(
+  JPL_TT_JD - J2000_JD
+);
 
 // JPL 水星（ヘリオセントリック、黄道J2000）
 const jplMercury = {
@@ -146,12 +173,12 @@ function compare() {
     // Astronomy Engineの生データ
     const aeMercury = Astronomy.HelioVector(
       Astronomy.Body.Mercury,
-      utcDate
+      aeTime
     );
 
     const aeEarth = Astronomy.HelioVector(
       Astronomy.Body.Earth,
-      utcDate
+      aeTime
     );
 
     // JPL座標をEQJに変換
@@ -181,7 +208,9 @@ function compare() {
 
     document.getElementById("result").textContent =
 `JPL TDB: 2026-11-10 04:21:51.295
-AE使用UTC: ${utcDate.toISOString()}
+JPL TDB JD: ${JPL_TDB_JD}
+TDB-TT補正: ${tdbMinusTt.toFixed(9)} 秒
+AE入力TT JD: ${(J2000_JD + aeTime.tt).toFixed(12)}
 
 【座標系】
 JPL: ICRF基準の黄道座標
@@ -203,4 +232,3 @@ ${relativeResult}
 
 </body>
 </html>
-```
