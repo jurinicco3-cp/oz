@@ -96,6 +96,15 @@ function eclipticToEquatorial(v) {
   };
 }
 
+// 赤道座標 EQJ から黄道座標に戻す
+function equatorialToEcliptic(v) {
+  return {
+    x: v.x,
+    y: v.y * Math.cos(EPS) + v.z * Math.sin(EPS),
+    z: -v.y * Math.sin(EPS) + v.z * Math.cos(EPS)
+  };
+}
+
 // ベクトルの引き算
 function subtract(a, b) {
   return {
