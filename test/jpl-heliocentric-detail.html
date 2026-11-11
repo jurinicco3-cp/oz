@@ -190,6 +190,10 @@ function compare() {
       aeTime
     );
 
+    // AEのEQJ座標を黄道座標に変換
+const aeMercuryEcl = equatorialToEcliptic(aeMercury);
+const aeEarthEcl = equatorialToEcliptic(aeEarth);
+
     // JPL座標をEQJに変換
     const jplMercuryEq = eclipticToEquatorial(jplMercury);
     const jplEarthEq = eclipticToEquatorial(jplEarth);
@@ -215,6 +219,32 @@ function compare() {
       aeEarth
     );
 
+    // 黄道座標同士の直接比較
+const eclipticResult =
+`【黄道座標同士の直接比較】
+
+水星：
+JPL:
+${format(jplMercury)}
+
+AE:
+${format(aeMercuryEcl)}
+
+差（AE - JPL）:
+${format(subtract(aeMercuryEcl, jplMercury))}
+
+地球：
+JPL:
+${format(jplEarth)}
+
+AE:
+${format(aeEarthEcl)}
+
+差（AE - JPL）:
+${format(subtract(aeEarthEcl, jplEarth))}
+
+`;
+
     document.getElementById("result").textContent =
 `JPL TDB: 2026-11-10 04:21:51.295
 JPL TDB JD: ${JPL_TDB_JD}
@@ -228,6 +258,8 @@ AE: J2000平均赤道座標 EQJ
 ${mercuryResult}
 ${earthResult}
 ${relativeResult}
+${eclipticResult}
+
 ※JPLのTDBからTDB-TTの周期項を用いてTTを計算し、
   Astronomy EngineのFromTerrestrialTimeに直接渡しています。
 ※TDB-TTの変換は近似式です。
