@@ -4,87 +4,187 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JPL ICRF to EQJ Diagnostic</title>
-<script src="../astronomy/astronomy.browser.min.js"></script>
+<title>MOON & TIME - JPL 2時刻比較</title>
+
+<script src="https://jurinicco3-cp.github.io/oz/astronomy/astronomy.browser.min.js"></script>
+
 <style>
-body {
-  font-family: system-ui, sans-serif;
-  max-width: 900px;
-  margin: 30px auto;
-  padding: 0 16px;
-  line-height: 1.6;
-}
-button {
-  padding: 10px 18px;
-  cursor: pointer;
-}
-pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  background: #f3f3f3;
-  padding: 14px;
-  border-radius: 8px;
-}
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #101522;
+    color: #edf1fa;
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 1000px;
+    margin: auto;
+  }
+  h1 { font-size: 25px; }
+  h2 {
+    margin-top: 32px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #39445b;
+    font-size: 20px;
+  }
+  h3 { font-size: 17px; }
+  .intro, .card {
+    background: #1a2233;
+    border: 1px solid #35415a;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 14px 0;
+  }
+  .muted { color: #aab5ca; font-size: 13px; }
+  .epoch {
+    color: #a9c9ff;
+    font-weight: 700;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  th, td {
+    text-align: right;
+    padding: 8px 6px;
+    border-bottom: 1px solid #35415a;
+    white-space: nowrap;
+  }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: #aab5ca; font-weight: 600; }
+  .value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #d6e5ff;
+    overflow-wrap: anywhere;
+  }
+  .good { color: #9ee0b1; }
+  .warning { color: #ffd18a; }
+  .error { color: #ffaaaa; }
+  .scroll { overflow-x: auto; }
+  code {
+    color: #c5d9ff;
+    overflow-wrap: anywhere;
+  }
+  button {
+    background: #729ce8;
+    color: #101522;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 12px 0;
+  }
+  #status { color: #ffd18a; }
 </style>
 </head>
+
 <body>
+<main>
+  <h1>MOON & TIME</h1>
+  <p class="muted">JPL Horizons DE441 と Astronomy Engine の2時刻比較</p>
 
-<h1>JPL ICRF to EQJ Diagnostic</h1>
-<p>JPLのICRF座標をJ2000平均赤道座標に変換して比較します。</p>
+  <div class="intro">
+    <strong>今回の検証内容</strong>
+    <p>
+      JPL Horizonsの2つの時刻について、水星・地球の太陽中心位置を比較します。
+      JPLのICRF座標にはフレームバイアス行列を適用し、
+      Astronomy EngineのEQJ座標と比較します。
+    </p>
+    <p class="muted">
+      フレーム変換はICRF/GCRSとJ2000平均赤道・平均春分点の近似的な整合です。
+      ICRFの実現差などが残る可能性があります。
+    </p>
+  </div>
 
-<button onclick="compare()">比較する</button>
-
-<h2>比較結果</h2>
-<pre id="result">比較ボタンを押してください。</pre>
+  <button id="runButton" onclick="runComparison()">比較を実行</button>
+  <p id="status">計算待ち</p>
+  <div id="results"></div>
+</main>
 
 <script>
-const DEG = Math.PI / 180;
-const AU_KM = 149597870.7;
+"use strict";
+
+// =====================================================
+// 1. JPL Horizonsの時刻（TDB）
+// =====================================================
+
+const JPL_EPOCHS = [
+  {
+    label: "1つ目の時刻",
+    tdbJD: 2461354.681149248,
+
+    mercury: {
+      x: 0.07309778298570406,
+      y: 0.2665379926792839,
+      z: 0.1348103076213735
+    },
+
+    earth: {
+      x: 0.6702799575602734,
+      y: 0.6690198487058370,
+      z: 0.2900051913583030
+    }
+  },
+
+  {
+    label: "2つ目の時刻",
+    tdbJD: 2461354.681843692,
+
+    mercury: {
+      x: 0.07307489017818641,
+      y: 0.2665419200717218,
+      z: 0.1348147782015284
+    },
+
+    earth: {
+      x: 0.6702709635727099,
+      y: 0.6690272283116131,
+      z: 0.2900083903109221
+    }
+  }
+];
+
+
+// =====================================================
+// 2. 定数
+// =====================================================
+
 const J2000_JD = 2451545.0;
+const AU_KM = 149597870.7;
+const RAD_TO_ARCSEC = 206264.80624709636;
 
-// JPL TDB時刻
-const JPL_TDB_JD = 2461354.681843692;
 
-// TDB - TT の近似計算（秒）
-function tdbMinusTtSeconds(jdTdb) {
-  const T = (jdTdb - J2000_JD) / 36525;
+// =====================================================
+// 3. TDBからTTへの近似変換
+// =====================================================
+
+function tdbMinusTtSeconds(tdbJD) {
+  const days = tdbJD - J2000_JD;
+  const g = (357.53 + 0.9856003 * days) * Math.PI / 180;
 
   return (
-    0.001657 * Math.sin(628.3076 * T + 6.2401) +
-    0.000022 * Math.sin(575.3385 * T + 4.2970) +
-    0.000014 * Math.sin(1256.6152 * T + 6.1969) +
-    0.000005 * Math.sin(606.9777 * T + 4.0212) +
-    0.000005 * Math.sin(52.9691 * T + 0.4444) +
-    0.000002 * Math.sin(21.3299 * T + 5.5431) +
-    0.000102 * T * Math.sin(628.3076 * T + 4.2490)
+    0.001657 * Math.sin(g) +
+    0.000022 * Math.sin(2 * g)
   );
 }
 
-const tdbMinusTt = tdbMinusTtSeconds(JPL_TDB_JD);
-const JPL_TT_JD =
-  JPL_TDB_JD - tdbMinusTt / 86400;
+function tdbToTtJD(tdbJD) {
+  const correction = tdbMinusTtSeconds(tdbJD);
+  return tdbJD - correction / 86400;
+}
 
-// Astronomy EngineにTTを渡す
-const aeTime = Astronomy.AstroTime.FromTerrestrialTime(
-  JPL_TT_JD - J2000_JD
-);
 
-// JPL 水星（太陽中心・ICRF）
-const jplMercuryICRF = {
-  x: 0.07307489017818641,
-  y: 0.2665419200717218,
-  z: 0.1348147782015284
-};
+// =====================================================
+// 4. ICRFからJ2000平均赤道・平均春分点への
+//    IAU 2000 frame-bias行列
+// =====================================================
 
-// JPL 地球（太陽中心・ICRF）
-const jplEarthICRF = {
-  x: 0.6702709635727099,
-  y: 0.6690272283116131,
-  z: 0.2900083903109221
-};
-
-// IAU 2000 SOFA frame-bias matrix
-// GCRS / ICRS-oriented axes -> mean J2000 equator and equinox
 const FRAME_BIAS = [
   [
     0.9999999999999942,
@@ -103,31 +203,27 @@ const FRAME_BIAS = [
   ]
 ];
 
-// ICRF座標をJ2000平均赤道座標へ変換
 function icrfToEqj(v) {
   return {
-    x:
-      FRAME_BIAS[0][0] * v.x +
-      FRAME_BIAS[0][1] * v.y +
-      FRAME_BIAS[0][2] * v.z,
+    x: FRAME_BIAS[0][0] * v.x +
+       FRAME_BIAS[0][1] * v.y +
+       FRAME_BIAS[0][2] * v.z,
 
-    y:
-      FRAME_BIAS[1][0] * v.x +
-      FRAME_BIAS[1][1] * v.y +
-      FRAME_BIAS[1][2] * v.z,
+    y: FRAME_BIAS[1][0] * v.x +
+       FRAME_BIAS[1][1] * v.y +
+       FRAME_BIAS[1][2] * v.z,
 
-    z:
-      FRAME_BIAS[2][0] * v.x +
-      FRAME_BIAS[2][1] * v.y +
-      FRAME_BIAS[2][2] * v.z
+    z: FRAME_BIAS[2][0] * v.x +
+       FRAME_BIAS[2][1] * v.y +
+       FRAME_BIAS[2][2] * v.z
   };
 }
 
-// JPL座標をEQJに変換
-const jplMercuryEQJ = icrfToEqj(jplMercuryICRF);
-const jplEarthEQJ = icrfToEqj(jplEarthICRF);
 
-// ベクトルの引き算
+// =====================================================
+// 5. ベクトル計算
+// =====================================================
+
 function subtract(a, b) {
   return {
     x: a.x - b.x,
@@ -136,283 +232,347 @@ function subtract(a, b) {
   };
 }
 
-// 3D距離
-function distance(v) {
-  return Math.hypot(v.x, v.y, v.z);
+function add(a, b) {
+  return {
+    x: a.x + b.x,
+    y: a.y + b.y,
+    z: a.z + b.z
+  };
 }
 
-// ベクトルの角度差
-function angleBetween(a, b) {
-  const cx = a.y * b.z - a.z * b.y;
-  const cy = a.z * b.x - a.x * b.z;
-  const cz = a.x * b.y - a.y * b.x;
-
-  const cross = Math.hypot(cx, cy, cz);
-
-  const dot =
-    a.x * b.x +
-    a.y * b.y +
-    a.z * b.z;
-
-  return Math.atan2(cross, dot);
+function magnitude(v) {
+  return Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
 }
 
-// 座標表示
-function format(v) {
-  return `X = ${v.x.toFixed(12)}
-Y = ${v.y.toFixed(12)}
-Z = ${v.z.toFixed(12)}`;
+function dot(a, b) {
+  return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
-// 距離・方向の差を分析
-function analyzePosition(name, jpl, ae) {
-  const jplDistance = distance(jpl);
-  const aeDistance = distance(ae);
+function scale(v, k) {
+  return { x: v.x*k, y: v.y*k, z: v.z*k };
+}
 
-  const delta = subtract(ae, jpl);
-  const totalKm = distance(delta) * AU_KM;
+function differenceMetrics(jpl, ae) {
+  const residual = subtract(ae, jpl);
 
-  const ux = jpl.x / jplDistance;
-  const uy = jpl.y / jplDistance;
-  const uz = jpl.z / jplDistance;
+  const jplLength = magnitude(jpl);
+  const aeLength = magnitude(ae);
+  const residualLength = magnitude(residual);
 
-  const radialAU =
-    delta.x * ux +
-    delta.y * uy +
-    delta.z * uz;
+  const cosine = dot(jpl, ae) / (jplLength * aeLength);
+  const angle = Math.acos(Math.max(-1, Math.min(1, cosine)));
 
-  const transverseAU = Math.sqrt(
-    Math.max(0, distance(delta) ** 2 - radialAU ** 2)
+  const radial = dot(residual, scale(jpl, 1 / jplLength));
+  const transverse = Math.sqrt(
+    Math.max(0, residualLength*residualLength - radial*radial)
   );
 
-  const angleRad = angleBetween(jpl, ae);
-  const angleDeg = angleRad / DEG;
-  const angleArcsec = angleDeg * 3600;
-
-  return `【${name}：距離と方向の差】
-
-JPL距離: ${(jplDistance * AU_KM).toFixed(3)} km
-AE距離: ${(aeDistance * AU_KM).toFixed(3)} km
-
-距離の差（AE - JPL）:
-${((aeDistance - jplDistance) * AU_KM).toFixed(3)} km
-
-距離方向のずれ:
-${(radialAU * AU_KM).toFixed(3)} km
-
-横方向のずれ:
-${(transverseAU * AU_KM).toFixed(3)} km
-
-方向の角度差:
-${angleDeg.toFixed(10)} 度
-${angleArcsec.toFixed(6)} 秒角
-
-位置全体の差:
-${totalKm.toFixed(3)} km
-
-`;
+  return {
+    residual,
+    distanceKm: residualLength * AU_KM,
+    angleArcsec: angle * RAD_TO_ARCSEC,
+    radialKm: radial * AU_KM,
+    transverseKm: transverse * AU_KM,
+    jplDistanceKm: jplLength * AU_KM,
+    aeDistanceKm: aeLength * AU_KM
+  };
 }
 
-// 個別天体の比較
-function check(name, jpl, ae) {
-  const delta = subtract(ae, jpl);
 
-  return `【${name}】
+// =====================================================
+// 6. 表示用
+// =====================================================
 
-JPL（ICRF → EQJ変換後）:
-${format(jpl)}
-
-Astronomy Engine（EQJ）:
-${format(ae)}
-
-差（AE - JPL）:
-${format(delta)}
-
-3D距離差: ${distance(delta).toExponential(9)} AU
-距離: ${(distance(delta) * AU_KM).toFixed(3)} km
-
-`;
+function fmt(value, digits = 3) {
+  return Number(value).toLocaleString("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
 }
 
-// 水星と地球の相対位置比較
-function compareRelative(jplMercury, jplEarth, aeMercury, aeEarth) {
-  const jplRelative = subtract(jplMercury, jplEarth);
-  const aeRelative = subtract(aeMercury, aeEarth);
-  const delta = subtract(aeRelative, jplRelative);
-
-  return `【水星 − 地球：相対位置比較】
-
-JPL相対位置（EQJ変換後）:
-${format(jplRelative)}
-
-AE相対位置（EQJ）:
-${format(aeRelative)}
-
-相対位置の差（AE - JPL）:
-${format(delta)}
-
-3D相対位置差:
-${distance(delta).toExponential(9)} AU
-
-距離:
-${(distance(delta) * AU_KM).toFixed(3)} km
-
-`;
+function fmtAU(value) {
+  return value.toFixed(12);
 }
 
-// 地球から見た水星の比較
-function analyzeGeocentricMercury(
-  jplMercury,
-  jplEarth,
-  aeMercury,
-  aeEarth
-) {
-  const jplRelative = subtract(jplMercury, jplEarth);
-  const aeRelative = subtract(aeMercury, aeEarth);
-  const delta = subtract(aeRelative, jplRelative);
+function vectorText(v) {
+  return `
+    <code>
+      X: ${fmtAU(v.x)}<br>
+      Y: ${fmtAU(v.y)}<br>
+      Z: ${fmtAU(v.z)}
+    </code>
+  `;
+}
 
-  const jplDistance = distance(jplRelative);
-  const aeDistance = distance(aeRelative);
-  const difference = distance(delta);
+function metricsTable(rows) {
+  return `
+    <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>比較項目</th>
+          <th>位置差 km</th>
+          <th>角度差 arcsec</th>
+          <th>動径差 km</th>
+          <th>横方向差 km</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.name}</td>
+            <td>${fmt(r.m.distanceKm)}</td>
+            <td>${fmt(r.m.angleArcsec, 6)}</td>
+            <td>${fmt(r.m.radialKm)}</td>
+            <td>${fmt(r.m.transverseKm)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
 
-  const ux = jplRelative.x / jplDistance;
-  const uy = jplRelative.y / jplDistance;
-  const uz = jplRelative.z / jplDistance;
 
-  const radialAU =
-    delta.x * ux +
-    delta.y * uy +
-    delta.z * uz;
+// =====================================================
+// 7. 1時刻分の計算
+// =====================================================
 
-  const transverseAU = Math.sqrt(
-    Math.max(0, difference ** 2 - radialAU ** 2)
+function calculateEpoch(epoch) {
+  const ttJD = tdbToTtJD(epoch.tdbJD);
+
+  // Astronomy EngineにはTTを渡す
+  const aeTime = Astronomy.AstroTime.FromTerrestrialTime(
+    ttJD - J2000_JD
   );
 
-  const angleRad = angleBetween(jplRelative, aeRelative);
-  const angleDeg = angleRad / DEG;
-  const angleArcsec = angleDeg * 3600;
+  // Astronomy Engineの太陽中心ベクトル（EQJ）
+  const aeMercury = Astronomy.HelioVector(
+    Astronomy.Body.Mercury,
+    aeTime
+  );
 
-  return `【地球から見た水星：相対位置の差】
+  const aeEarth = Astronomy.HelioVector(
+    Astronomy.Body.Earth,
+    aeTime
+  );
 
-JPL 地球・水星間距離:
-${(jplDistance * AU_KM).toFixed(3)} km
+  // JPLのICRFベクトルをEQJ相当に変換
+  const jplMercury = icrfToEqj(epoch.mercury);
+  const jplEarth = icrfToEqj(epoch.earth);
 
-AE 地球・水星間距離:
-${(aeDistance * AU_KM).toFixed(3)} km
+  // 水星・地球の比較
+  const mercuryMetrics = differenceMetrics(jplMercury, aeMercury);
+  const earthMetrics = differenceMetrics(jplEarth, aeEarth);
 
-距離の差（AE - JPL）:
-${((aeDistance - jplDistance) * AU_KM).toFixed(3)} km
+  // 地球中心から見た水星のベクトル
+  const jplGeo = subtract(jplMercury, jplEarth);
+  const aeGeo = subtract(aeMercury, aeEarth);
 
-距離方向のずれ:
-${(radialAU * AU_KM).toFixed(3)} km
+  const geoMetrics = differenceMetrics(jplGeo, aeGeo);
 
-横方向のずれ:
-${(transverseAU * AU_KM).toFixed(3)} km
-
-方向の角度差:
-${angleDeg.toFixed(10)} 度
-${angleArcsec.toFixed(6)} 秒角
-
-位置全体の差:
-${(difference * AU_KM).toFixed(3)} km
-
-`;
+  return {
+    label: epoch.label,
+    tdbJD: epoch.tdbJD,
+    ttJD,
+    correctionSeconds: tdbMinusTtSeconds(epoch.tdbJD),
+    jplMercury,
+    jplEarth,
+    aeMercury,
+    aeEarth,
+    mercuryMetrics,
+    earthMetrics,
+    jplGeo,
+    aeGeo,
+    geoMetrics
+  };
 }
 
-// メイン比較処理
-function compare() {
+
+// =====================================================
+// 8. 2時刻間の残差変化
+// =====================================================
+
+function residualChange(a, b) {
+  // 各時刻の残差（AE - JPL）の変化
+  const change = subtract(
+    b.residual,
+    a.residual
+  );
+
+  return {
+    vector: change,
+    distanceKm: magnitude(change) * AU_KM,
+    xKm: change.x * AU_KM,
+    yKm: change.y * AU_KM,
+    zKm: change.z * AU_KM
+  };
+}
+
+
+// =====================================================
+// 9. 結果表示
+// =====================================================
+
+function renderEpoch(result) {
+  const rows = [
+    { name: "水星（太陽中心）", m: result.mercuryMetrics },
+    { name: "地球（太陽中心）", m: result.earthMetrics },
+    { name: "水星（地球中心）", m: result.geoMetrics }
+  ];
+
+  return `
+    <section class="card">
+      <h2>${result.label}</h2>
+
+      <p class="epoch">JPL TDB JD: ${result.tdbJD}</p>
+      <p class="muted">AEに渡したTT JD: ${result.ttJD.toFixed(12)}</p>
+      <p class="muted">
+        TDB − TT近似値: ${fmt(result.correctionSeconds, 9)} 秒
+      </p>
+
+      ${metricsTable(rows)}
+
+      <h3>水星：JPL変換後 / Astronomy Engine</h3>
+      <p class="muted">JPL（ICRF → EQJ相当）</p>
+      ${vectorText(result.jplMercury)}
+      <p class="muted">Astronomy Engine（EQJ）</p>
+      ${vectorText(result.aeMercury)}
+
+      <h3>地球：JPL変換後 / Astronomy Engine</h3>
+      <p class="muted">JPL（ICRF → EQJ相当）</p>
+      ${vectorText(result.jplEarth)}
+      <p class="muted">Astronomy Engine（EQJ）</p>
+      ${vectorText(result.aeEarth)}
+    </section>
+  `;
+}
+
+
+function renderChange(name, a, b) {
+  const c = residualChange(a, b);
+
+  return `
+    <tr>
+      <td>${name}</td>
+      <td>${fmt(c.distanceKm)}</td>
+      <td>${fmt(c.xKm)}</td>
+      <td>${fmt(c.yKm)}</td>
+      <td>${fmt(c.zKm)}</td>
+    </tr>
+  `;
+}
+
+
+function runComparison() {
+  const status = document.getElementById("status");
+  const output = document.getElementById("results");
+
   try {
-    const aeMercury = Astronomy.HelioVector(
-      Astronomy.Body.Mercury,
-      aeTime
-    );
+    if (typeof Astronomy === "undefined") {
+      throw new Error("Astronomy Engineが読み込まれていません。");
+    }
 
-    const aeEarth = Astronomy.HelioVector(
-      Astronomy.Body.Earth,
-      aeTime
-    );
+    const results = JPL_EPOCHS.map(calculateEpoch);
 
-    const mercuryResult = check(
-      "Mercury",
-      jplMercuryEQJ,
-      aeMercury
-    );
+    const first = results[0];
+    const second = results[1];
 
-    const earthResult = check(
-      "Earth",
-      jplEarthEQJ,
-      aeEarth
-    );
+    const changes = [
+      {
+        name: "水星（太陽中心）",
+        a: first.mercuryMetrics,
+        b: second.mercuryMetrics
+      },
+      {
+        name: "地球（太陽中心）",
+        a: first.earthMetrics,
+        b: second.earthMetrics
+      },
+      {
+        name: "水星（地球中心）",
+        a: first.geoMetrics,
+        b: second.geoMetrics
+      }
+    ];
 
-    const relativeResult = compareRelative(
-      jplMercuryEQJ,
-      jplEarthEQJ,
-      aeMercury,
-      aeEarth
-    );
+    output.innerHTML =
+      results.map(renderEpoch).join("") +
+      `
+      <section class="card">
+        <h2>2時刻間の残差変化</h2>
+        <p>
+          それぞれの時刻での残差（AE − JPL）が、
+          60秒間でどれだけ変化したかを表示します。
+        </p>
 
-    const geocentricResult = analyzeGeocentricMercury(
-      jplMercuryEQJ,
-      jplEarthEQJ,
-      aeMercury,
-      aeEarth
-    );
+        <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>対象</th>
+              <th>残差変化の大きさ km</th>
+              <th>ΔX km</th>
+              <th>ΔY km</th>
+              <th>ΔZ km</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${changes.map(c =>
+              renderChange(c.name, c.a, c.b)
+            ).join("")}
+          </tbody>
+        </table>
+        </div>
 
-    const directionResult =
-      analyzePosition("水星", jplMercuryEQJ, aeMercury) +
-      analyzePosition("地球", jplEarthEQJ, aeEarth);
+        <h3>2時刻の誤差量の比較</h3>
+        <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>対象</th>
+              <th>1つ目 km</th>
+              <th>2つ目 km</th>
+              <th>差 km</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${changes.map(c => `
+              <tr>
+                <td>${c.name}</td>
+                <td>${fmt(c.a.distanceKm)}</td>
+                <td>${fmt(c.b.distanceKm)}</td>
+                <td>${fmt(c.b.distanceKm - c.a.distanceKm)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        </div>
+      </section>
 
-    document.getElementById("result").textContent =
-`JPL TDB: 2026-11-10 04:21:51.295
-JPL TDB JD: ${JPL_TDB_JD}
-TDB-TT補正: ${tdbMinusTt.toFixed(9)} 秒
-AE入力TT JD: ${(J2000_JD + aeTime.tt).toFixed(12)}
+      <section class="card">
+        <h2>今回の検証で見るポイント</h2>
+        <ol>
+          <li>水星の残差ベクトルが60秒間でどれだけ変化したか</li>
+          <li>地球の残差ベクトルも同じ傾向を示すか</li>
+          <li>地球中心の水星の残差がどう変化したか</li>
+        </ol>
+        <p class="muted">
+          残差変化が小さくても、誤差の原因が特定できたことにはなりません。
+          まずは時間に対する残差の変化を観察するための比較です。
+        </p>
+      </section>
+      `;
 
-【座標系】
-JPL元データ: ICRF
-JPL変換後: J2000平均赤道座標（EQJ相当）
-AE: J2000平均赤道座標（EQJ）
+    status.textContent = "計算完了";
+    status.className = "good";
 
-【JPL元データ：ICRF】
-
-Mercury:
-${format(jplMercuryICRF)}
-
-Earth:
-${format(jplEarthICRF)}
-
-【JPL変換後：EQJ】
-
-Mercury:
-${format(jplMercuryEQJ)}
-
-Earth:
-${format(jplEarthEQJ)}
-
-【フレーム変換】
-IAU 2000 SOFA frame-bias matrix
-GCRS / ICRS-oriented axes → mean J2000
-
-${mercuryResult}
-${earthResult}
-${relativeResult}
-${geocentricResult}
-${directionResult}
-
-※JPLはDE441の太陽中心ICRF座標です。
-※JPL座標にはIAU 2000のフレームバイアス変換を適用しています。
-※AEはHelioVectorによるEQJ座標です。
-※ICRFとFK5/J2000の実現差は完全には除去されていません。
-※TDB-TT変換には近似式を使用しています。
-※この結果は座標系を標準的に合わせた比較であり、
-  最終的な精度評価には残存フレーム差も考慮が必要です。`;
-
-  } catch (e) {
-    document.getElementById("result").textContent =
-      "エラー: " + e.message;
+  } catch (error) {
+    status.textContent = "エラー: " + error.message;
+    status.className = "error";
+    console.error(error);
   }
 }
 </script>
-
 </body>
 </html>
