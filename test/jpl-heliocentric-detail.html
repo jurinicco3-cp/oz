@@ -87,22 +87,6 @@ const jplEarth = {
   z: -0.00004625215897568905
 };
 
-// JPL 地球（ヘリオセントリック、黄道J2000）
-const jplEarth = {
-  x: 0.6702709635727099,
-  y: 0.7291791937060391,
-  z: -0.00004625215897568905
-};
-
-// 黄道座標から赤道座標 EQJ に戻す
-function eclipticToEquatorial(v) {
-  return {
-    x: v.x,
-    y: v.y * Math.cos(EPS) - v.z * Math.sin(EPS),
-    z: v.y * Math.sin(EPS) + v.z * Math.cos(EPS)
-  };
-}
-
 // 黄道座標から赤道座標 EQJ に戻す
 function eclipticToEquatorial(v) {
   return {
