@@ -1,1 +1,278 @@
+{
+  "version": "1.0.0",
+  "language": "ja",
+  "description": "12星座の日別・時間帯別運勢を算出するための初期スコアリングルール",
 
+  "scoring": {
+    "score_range": {
+      "min": 0,
+      "max": 100,
+      "neutral": 50
+    },
+
+    "dimensions": {
+      "influence": {
+        "description": "その運勢カテゴリが天体配置からどの程度強く影響を受けているか",
+        "min": 0,
+        "max": 100
+      },
+      "favorability": {
+        "description": "その天体配置が対象カテゴリの行動をどの程度後押しする象徴を持つか",
+        "min": 0,
+        "max": 100,
+        "neutral": 50
+      }
+    },
+
+    "rating_bands": [
+      {
+        "min": 85,
+        "max": 100,
+        "level": 5,
+        "label": "とても好調"
+      },
+      {
+        "min": 70,
+        "max": 84,
+        "level": 4,
+        "label": "好調"
+      },
+      {
+        "min": 45,
+        "max": 69,
+        "level": 3,
+        "label": "穏やか"
+      },
+      {
+        "min": 30,
+        "max": 44,
+        "level": 2,
+        "label": "慎重"
+      },
+      {
+        "min": 0,
+        "max": 29,
+        "level": 1,
+        "label": "見直し"
+      }
+    ],
+
+    "display": {
+      "show_numeric_scores": false,
+      "show_rating_level": false,
+      "use_scores_for_advice": true,
+      "show_only_clear_time_blocks": true
+    }
+  },
+
+  "planet_weights": {
+    "sun": 1.0,
+    "moon": 1.2,
+    "mercury": 1.0,
+    "venus": 1.0,
+    "mars": 0.9,
+    "jupiter": 0.7,
+    "saturn": 0.7,
+    "uranus": 0.5,
+    "neptune": 0.5,
+    "pluto": 0.5
+  },
+
+  "aspect_weights": {
+    "conjunction": 1.0,
+    "sextile": 0.7,
+    "square": 0.9,
+    "trine": 0.8,
+    "opposition": 0.9
+  },
+
+  "aspect_nature": {
+    "conjunction": "neutral",
+    "sextile": "harmonious",
+    "square": "challenging",
+    "trine": "harmonious",
+    "opposition": "challenging"
+  },
+
+  "event_influence": {
+    "use_applying_separating": true,
+    "applying_multiplier": 1.0,
+    "separating_multiplier": 0.8,
+    "use_orb_decay": true,
+    "decay_method": "linear",
+    "minimum_influence": 0.05,
+    "note": "アスペクトの正確な成立時刻を中心に影響度を評価する。オーブ内でも成立前と成立後で影響を区別する。"
+  },
+
+  "house_weights": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 0.8,
+    "4": 0.7,
+    "5": 1.0,
+    "6": 0.9,
+    "7": 1.0,
+    "8": 0.9,
+    "9": 0.7,
+    "10": 1.0,
+    "11": 0.8,
+    "12": 0.7
+  },
+
+  "category_weights": {
+    "overall": {
+      "moon": 1.2,
+      "sun": 1.0,
+      "mercury": 0.9,
+      "venus": 0.9,
+      "mars": 0.9,
+      "jupiter": 0.8,
+      "saturn": 0.8,
+      "uranus": 0.7,
+      "neptune": 0.7,
+      "pluto": 0.7
+    },
+
+    "love": {
+      "moon": 1.2,
+      "venus": 1.3,
+      "mars": 0.9,
+      "mercury": 0.9,
+      "jupiter": 0.8,
+      "saturn": 0.7
+    },
+
+    "money": {
+      "venus": 1.2,
+      "jupiter": 1.2,
+      "saturn": 1.0,
+      "mercury": 1.0,
+      "mars": 0.8,
+      "pluto": 0.9,
+      "uranus": 0.8
+    },
+
+    "work": {
+      "sun": 1.2,
+      "mercury": 1.2,
+      "mars": 1.0,
+      "saturn": 1.1,
+      "jupiter": 0.9,
+      "moon": 0.8
+    }
+  },
+
+  "money_subcategory_weights": {
+    "income": {
+      "venus": 1.0,
+      "jupiter": 1.2,
+      "sun": 0.8
+    },
+    "investment": {
+      "mercury": 1.2,
+      "saturn": 1.2,
+      "jupiter": 1.0,
+      "uranus": 0.9,
+      "pluto": 0.8
+    },
+    "fortune": {
+      "jupiter": 1.3,
+      "uranus": 1.0,
+      "moon": 0.9
+    },
+    "gambling": {
+      "mars": 1.0,
+      "jupiter": 1.2,
+      "uranus": 1.0
+    },
+    "assets": {
+      "venus": 1.0,
+      "saturn": 1.2,
+      "pluto": 1.0
+    }
+  },
+
+  "category_evaluation": {
+    "overall": {
+      "independent_scoring": true,
+      "description": "その日の天体配置全体から時間帯ごとの流れを評価する"
+    },
+    "love": {
+      "independent_scoring": true,
+      "subcategories": [
+        "encounter",
+        "communication",
+        "relationship",
+        "affection"
+      ]
+    },
+    "money": {
+      "independent_scoring": true,
+      "subcategories": [
+        "income",
+        "investment",
+        "fortune",
+        "gambling",
+        "assets"
+      ],
+      "combine_subcategories_into_one_schedule": true,
+      "avoid_guaranteed_profit_predictions": true,
+      "avoid_winning_predictions": true,
+      "encourage_risk_awareness": true
+    },
+    "work": {
+      "independent_scoring": true,
+      "subcategories": [
+        "productivity",
+        "communication",
+        "planning",
+        "career"
+      ]
+    }
+  },
+
+  "time_block_rules": {
+    "use_event_boundaries": true,
+    "merge_simultaneous_events": true,
+    "automatically_merge_short_blocks": false,
+    "use_midpoint_for_scoring": true,
+    "event_at_boundary_applies_to_following_block": true,
+    "allow_empty_blocks": true
+  },
+
+  "dominant_influence_rules": {
+    "minimum_influence_score": 70,
+    "minimum_difference_from_second": 15,
+    "require_astrological_evidence": true,
+    "allow_no_dominant_theme": true
+  },
+
+  "advice_rules": {
+    "generate_recommended_actions": true,
+    "generate_cautionary_actions": true,
+    "avoid_deterministic_language": true,
+    "avoid_guaranteed_outcomes": true,
+    "avoid_fear_inducing_language": true,
+    "preferred_phrases": [
+      "〜を意識したい時間",
+      "〜に向いている流れ",
+      "確認してから進めるとよさそう",
+      "急がず慎重に進めたい時間"
+    ],
+    "avoid_phrases": [
+      "必ず成功する",
+      "絶対に失敗する",
+      "必ず当たる",
+      "確実に儲かる"
+    ]
+  },
+
+  "calculation_notes": [
+    "影響度と好調度は別々に計算する。",
+    "影響が強いことは、好調であることを意味しない。",
+    "各運勢カテゴリは独立して評価する。",
+    "金運の内部サブカテゴリは一つの金運スケジュールに統合する。",
+    "天体・アスペクト・ハウスの重みは初期設定であり、検証後に調整する。",
+    "数値スコアは内部計算用とし、初期画面には表示しない。"
+  ]
+}
