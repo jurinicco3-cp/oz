@@ -1,1 +1,63 @@
-
+{
+  "version": "1.0.0",
+  "language": "ja",
+  "aspects": [
+    {
+      "id": "conjunction",
+      "name": "コンジャンクション",
+      "symbol": "☌",
+      "angle": 0,
+      "nature": "neutral",
+      "keywords": ["集中", "融合", "強調", "始まり"],
+      "principle": "複数の天体の象徴が重なり、互いの性質を強く結びつける。",
+      "default_orb_degrees": 8
+    },
+    {
+      "id": "sextile",
+      "name": "セクスタイル",
+      "symbol": "⚹",
+      "angle": 60,
+      "nature": "harmonious",
+      "keywords": ["協力", "機会", "交流", "可能性"],
+      "principle": "天体同士が協力しやすく、新しい機会や可能性を生み出す関係。",
+      "default_orb_degrees": 4
+    },
+    {
+      "id": "square",
+      "name": "スクエア",
+      "symbol": "□",
+      "angle": 90,
+      "nature": "challenging",
+      "keywords": ["葛藤", "緊張", "課題", "行動"],
+      "principle": "異なる性質がぶつかり、課題や緊張を通じて行動を促す関係。",
+      "default_orb_degrees": 6
+    },
+    {
+      "id": "trine",
+      "name": "トライン",
+      "symbol": "△",
+      "angle": 120,
+      "nature": "harmonious",
+      "keywords": ["調和", "流れ", "自然な発展", "安定"],
+      "principle": "天体同士の性質が調和し、物事が自然に進みやすい関係。",
+      "default_orb_degrees": 6
+    },
+    {
+      "id": "opposition",
+      "name": "オポジション",
+      "symbol": "☍",
+      "angle": 180,
+      "nature": "challenging",
+      "keywords": ["対立", "緊張", "バランス", "気づき"],
+      "principle": "向かい合う性質が意識され、他者や状況とのバランスを考える関係。",
+      "default_orb_degrees": 8
+    }
+  ],
+  "orb_policy": {
+    "unit": "degrees",
+    "use_for_influence": true,
+    "use_for_exact_event_detection": false,
+    "applying_separating_detection": true,
+    "note": "オーブはアスペクトの影響範囲を評価するために使用する。正確な成立時刻は角度が一致する時刻から計算する。数値は初期設定案であり、検証後に調整する。"
+  }
+}
