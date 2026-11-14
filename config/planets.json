@@ -1,1 +1,245 @@
-
+{
+  "version": "1.0.0",
+  "language": "ja",
+  "planets": [
+    {
+      "id": "sun",
+      "name": "太陽",
+      "type": "luminary",
+      "keywords": [
+        "自己表現",
+        "意志",
+        "生命力",
+        "目的",
+        "自分らしさ"
+      ],
+      "principle": "自分の意志や方向性、人生において意識を向ける対象を象徴する。",
+      "category_associations": {
+        "overall": "その日の基本的な方向性や行動の軸",
+        "love": "自己表現、愛情への向き合い方",
+        "money": "お金に対する価値観や経済的な目標",
+        "work": "仕事上の目標、主体性、自己実現"
+      },
+      "event_role": {
+        "boundary_candidate": true,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "moon",
+      "name": "月",
+      "type": "luminary",
+      "keywords": [
+        "感情",
+        "気分",
+        "安心感",
+        "日常",
+        "無意識",
+        "反応"
+      ],
+      "principle": "日々の感情や心理状態、物事に対する自然な反応や心の動きを象徴する。",
+      "category_associations": {
+        "overall": "日々の流れや気分の変化",
+        "love": "感情表現、親密さ、心の距離",
+        "money": "安心感、所有への欲求、感情的な判断",
+        "work": "日々の業務環境、気分、取り組み方"
+      },
+      "event_role": {
+        "boundary_candidate": true,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "mercury",
+      "name": "水星",
+      "type": "personal",
+      "keywords": [
+        "思考",
+        "知性",
+        "会話",
+        "連絡",
+        "情報",
+        "判断"
+      ],
+      "principle": "思考や情報処理、コミュニケーション、知識の伝達や判断を象徴する。",
+      "category_associations": {
+        "overall": "情報収集、判断、コミュニケーション",
+        "love": "連絡、会話、気持ちの伝達",
+        "money": "金銭情報、契約、取引、判断",
+        "work": "連絡、会議、交渉、書類、実務"
+      },
+      "event_role": {
+        "boundary_candidate": true,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "venus",
+      "name": "金星",
+      "type": "personal",
+      "keywords": [
+        "愛情",
+        "魅力",
+        "調和",
+        "喜び",
+        "価値",
+        "豊かさ"
+      ],
+      "principle": "愛情や人間関係の調和、魅力、美的感覚、喜びや価値を感じる対象を象徴する。",
+      "category_associations": {
+        "overall": "楽しみ、調和、心地よさ",
+        "love": "恋愛感情、魅力、愛情表現、親密さ",
+        "money": "豊かさ、金銭的価値、財産、楽しみ",
+        "work": "人間関係の調和、協力、仕事への満足感"
+      },
+      "event_role": {
+        "boundary_candidate": true,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "mars",
+      "name": "火星",
+      "type": "personal",
+      "keywords": [
+        "行動力",
+        "意欲",
+        "情熱",
+        "競争",
+        "決断",
+        "衝動"
+      ],
+      "principle": "行動する力や意欲、競争心、積極性、衝動や対立への向き合い方を象徴する。",
+      "category_associations": {
+        "overall": "行動力、積極性、物事を進める力",
+        "love": "情熱、積極的なアプローチ、衝動",
+        "money": "勝負への意欲、リスクを取る姿勢",
+        "work": "実行力、競争、挑戦、決断"
+      },
+      "event_role": {
+        "boundary_candidate": true,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "jupiter",
+      "name": "木星",
+      "type": "social",
+      "keywords": [
+        "発展",
+        "拡大",
+        "幸運",
+        "可能性",
+        "寛容",
+        "成長"
+      ],
+      "principle": "物事の拡大や発展、可能性、寛容さ、成長や豊かさを象徴する。",
+      "category_associations": {
+        "overall": "発展、可能性、前向きな展開",
+        "love": "関係の発展、寛容さ、喜び",
+        "money": "豊かさ、利益、金銭的な可能性",
+        "work": "成長、成功への展望、発展"
+      },
+      "event_role": {
+        "boundary_candidate": false,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "saturn",
+      "name": "土星",
+      "type": "social",
+      "keywords": [
+        "責任",
+        "規律",
+        "制限",
+        "忍耐",
+        "継続",
+        "現実"
+      ],
+      "principle": "責任や義務、制限、忍耐、長期的な努力や現実的な課題を象徴する。",
+      "category_associations": {
+        "overall": "慎重さ、責任、計画性",
+        "love": "関係への責任、信頼、長期的な関係",
+        "money": "資産管理、節度、長期的な金銭計画",
+        "work": "責任、規律、継続的な努力、課題"
+      },
+      "event_role": {
+        "boundary_candidate": false,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "uranus",
+      "name": "天王星",
+      "type": "transpersonal",
+      "keywords": [
+        "変化",
+        "革新",
+        "独立",
+        "自由",
+        "予想外",
+        "改革"
+      ],
+      "principle": "既存の枠組みからの解放、突然の変化、革新や独立性を象徴する。",
+      "category_associations": {
+        "overall": "予想外の変化、新しい方向性",
+        "love": "関係性の変化、自由、意外な展開",
+        "money": "予想外の金銭的変化、変動",
+        "work": "新しい方法、改革、独立した働き方"
+      },
+      "event_role": {
+        "boundary_candidate": false,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "neptune",
+      "name": "海王星",
+      "type": "transpersonal",
+      "keywords": [
+        "直感",
+        "夢",
+        "理想",
+        "想像力",
+        "曖昧さ",
+        "幻想"
+      ],
+      "principle": "直感や想像力、理想、夢、境界の曖昧さや現実を見極めにくい状態を象徴する。",
+      "category_associations": {
+        "overall": "直感、理想、曖昧さ",
+        "love": "ロマンチックな感情、理想化、思い込み",
+        "money": "金銭感覚の曖昧さ、期待と現実の差",
+        "work": "創造性、直感、目標の不明瞭さ"
+      },
+      "event_role": {
+        "boundary_candidate": false,
+        "background_interpretation": true
+      }
+    },
+    {
+      "id": "pluto",
+      "name": "冥王星",
+      "type": "transpersonal",
+      "keywords": [
+        "変容",
+        "再生",
+        "深層心理",
+        "執着",
+        "権力",
+        "根本的変化"
+      ],
+      "principle": "物事の根本的な変化や再生、深層心理、強い執着や力関係を象徴する。",
+      "category_associations": {
+        "overall": "根本的な変化、再構築",
+        "love": "深い結びつき、執着、関係性の変容",
+        "money": "財産や資源をめぐる力関係、根本的な変化",
+        "work": "権限、組織の変化、根本的な改革"
+      },
+      "event_role": {
+        "boundary_candidate": false,
+        "background_interpretation": true
+      }
+    }
+  ]
+}
