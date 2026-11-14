@@ -261,16 +261,22 @@
 
     return {
       datetime: targetDate.toISOString(),
-
+    
       coordinate_system:
-        "geocentric_ecliptic",
-
-      zodiac:
-        "tropical",
-
+        "geocentric_true_ecliptic_of_date",
+    
+      position_type:
+        "apparent",
+    
+      corrections: {
+        light_time: true,
+        aberration: true
+      },
+    
+      zodiac: "tropical",
+    
       planets: planets
-    };
-  }
+  };
 
   // ==========================================
   // 11. 外部公開API
