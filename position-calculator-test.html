@@ -1,1 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天体位置計算テスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 16px;
+      color: #333;
+    }
 
+    h1 {
+      font-size: 24px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin: 20px 0;
+    }
+
+    input, button {
+      padding: 9px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: #f3f3f3;
+    }
+
+    #status {
+      padding: 12px;
+      background: #f5f5f5;
+      margin-top: 16px;
+      white-space: pre-wrap;
+    }
+
+    .success {
+      color: #16803c;
+    }
+
+    .error {
+      color: #c62828;
+    }
+
+    #raw {
+      overflow-x: auto;
+      background: #f5f5f5;
+      padding: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>天体位置計算テスト</h1>
+
+  <p>
+    Astronomy Engineを使用して10天体の地心黄経を計算します。
+  </p>
+
+  <div class="controls">
+    <label>
+      計算日時：
+      <input type="datetime-local" id="datetime">
+    </label>
+
+    <button id="calculate">計算する</button>
+  </div>
+
+  <div id="status">計算待機中です。</div>
+
+  <h2>計算結果</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>天体</th>
+        <th>黄経</th>
+        <th>星座</th>
+        <th>星座内度数</th>
+      </tr>
+    </thead>
+    <tbody id="results">
+      <tr>
+        <td colspan="4">まだ計算されていません。</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>基本チェック</h2>
+  <div id="checks">未実行</div>
+
+  <h2>JSON出力</h2>
+  <pre id="raw">未実行</pre>
+
+  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script src="../engine/position-calculator.js"></script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const planetNames = {
+      sun: "太陽",
+      moon: "月",
+      mercury: "水星",
+      venus: "金星",
+      mars: "火星",
+      jupiter: "木星",
+      saturn: "土星",
+      uranus: "天王星",
+      neptune: "海王星",
+      pluto: "冥王星"
+    };
+
+    function runChecks(data) {
+      const entries = Object.entries(data.planets);
+      const checks = [];
+
+      checks.push({
+        name: "10天体の取得",
+        passed: entries.length === 10
+      });
+
+      checks.push({
+        name: "黄経が0以上360未満",
+        passed: entries.every(
+          ([, p]) =>
+            Number.isFinite(p.longitude) &&
+            p.longitude >= 0 &&
+            p.longitude < 360
+        )
+      });
+
+      checks.push({
+        name: "星座が12星座のいずれか",
+        passed: entries.every(
+          ([, p]) =>
+            PositionCalculator.planets.includes(
+              Object.keys(data.planets).find(
+                key => data.planets[key] === p
+              )
+            ) &&
+            typeof p.sign === "string"
+        )
+      });
+
+      checks.push({
+        name: "星座内度数が0以上30未満",
+        passed: entries.every(
+          ([, p]) =>
+            Number.isFinite(p.degree_in_sign) &&
+            p.degree_in_sign >= 0 &&
+            p.degree_in_sign < 30
+        )
+      });
+
+      $("checks").innerHTML = checks.map(check => `
+        <p class="${check.passed ? "success" : "error"}">
+          ${check.passed ? "✓" : "✗"} ${check.name}
+        </p>
+      `).join("");
+
+      return checks.every(check => check.passed);
+    }
+
+    function calculate() {
+      $("status").textContent = "計算中...";
+      $("status").className = "";
+      $("results").innerHTML = "";
+      $("checks").textContent = "検証中...";
+      $("raw").textContent = "";
+
+      try {
+        if (!window.PositionCalculator) {
+          throw new Error(
+            "PositionCalculatorが読み込まれていません。"
+          );
+        }
+
+        const value = $("datetime").value;
+
+        if (!value) {
+          throw new Error("計算日時を指定してください。");
+        }
+
+        const date = new Date(value);
+
+        const data =
+          PositionCalculator.calculatePositions(date);
+
+        for (const [key, planet] of Object.entries(data.planets)) {
+          const row = document.createElement("tr");
+
+          [
+            planetNames[key] || key,
+            planet.longitude.toFixed(6) + "°",
+            planet.sign,
+            planet.degree_in_sign.toFixed(6) + "°"
+          ].forEach(value => {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+          });
+
+          $("results").appendChild(row);
+        }
+
+        const passed = runChecks(data);
+
+        $("status").textContent = passed
+          ? "計算完了。基本チェックはすべて合格しました。"
+          : "計算は完了しましたが、一部の基本チェックに失敗しました。";
+
+        $("status").className = passed ? "success" : "error";
+
+        $("raw").textContent =
+          JSON.stringify(data, null, 2);
+
+      } catch (error) {
+        $("status").textContent =
+          "エラー： " + error.message;
+
+        $("status").className = "error";
+        $("checks").textContent = "検証できませんでした。";
+        console.error(error);
+      }
+    }
+
+    $("datetime").value = "2026-11-14T12:00";
+    $("calculate").addEventListener("click", calculate);
+  </script>
+
+</body>
+</html>
