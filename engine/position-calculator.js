@@ -1,4 +1,3 @@
-
 /**
  * position-calculator.js
  *
