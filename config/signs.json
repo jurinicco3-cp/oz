@@ -1,1 +1,202 @@
-
+{
+  "version": "1.0.0",
+  "language": "ja",
+  "zodiac_system": "tropical",
+  "signs": [
+    {
+      "id": "aries",
+      "name": "牡羊座",
+      "symbol": "♈",
+      "element": "fire",
+      "modality": "cardinal",
+      "ruling_planet": "mars",
+      "keywords": ["行動力", "情熱", "挑戦", "自立", "決断"],
+      "principle": "自分から行動を起こし、新しいことに挑戦する力を象徴する。",
+      "category_interpretations": {
+        "overall": "主体性や行動力、新しいことを始める意欲",
+        "love": "積極的なアプローチ、率直な愛情表現、恋の始まり",
+        "money": "素早い判断、挑戦への意欲、衝動的な出費への注意",
+        "work": "新しい仕事への着手、率先した行動、決断力"
+      }
+    },
+    {
+      "id": "taurus",
+      "name": "牡牛座",
+      "symbol": "♉",
+      "element": "earth",
+      "modality": "fixed",
+      "ruling_planet": "venus",
+      "keywords": ["安定", "継続", "五感", "豊かさ", "所有"],
+      "principle": "物事をじっくり育て、安心できる環境や価値あるものを築く力を象徴する。",
+      "category_interpretations": {
+        "overall": "安定感、継続力、心地よさや満足感",
+        "love": "安心できる関係、誠実さ、愛情を育てること",
+        "money": "収入や資産の安定、所有するものの価値、堅実な判断",
+        "work": "着実な作業、品質へのこだわり、粘り強い取り組み"
+      }
+    },
+    {
+      "id": "gemini",
+      "name": "双子座",
+      "symbol": "♊",
+      "element": "air",
+      "modality": "mutable",
+      "ruling_planet": "mercury",
+      "keywords": ["知性", "好奇心", "会話", "情報", "柔軟性"],
+      "principle": "情報を集め、考え、言葉や交流を通じて世界を広げる力を象徴する。",
+      "category_interpretations": {
+        "overall": "情報収集、好奇心、交流、柔軟な発想",
+        "love": "会話や連絡、軽やかな交流、知的なつながり",
+        "money": "情報を活用した判断、複数の選択肢、取引や交渉",
+        "work": "連絡、会議、情報整理、複数の作業への対応"
+      }
+    },
+    {
+      "id": "cancer",
+      "name": "蟹座",
+      "symbol": "♋",
+      "element": "water",
+      "modality": "cardinal",
+      "ruling_planet": "moon",
+      "keywords": ["感情", "安心", "共感", "保護", "居場所"],
+      "principle": "感情を大切にし、自分や大切な人が安心できる環境を育む力を象徴する。",
+      "category_interpretations": {
+        "overall": "感情、安心感、身近な人とのつながり",
+        "love": "思いやり、親密さ、心の距離を縮めること",
+        "money": "生活の安定、家庭に関わるお金、安心を重視した判断",
+        "work": "協力関係、周囲への気配り、安心できる環境づくり"
+      }
+    },
+    {
+      "id": "leo",
+      "name": "獅子座",
+      "symbol": "♌",
+      "element": "fire",
+      "modality": "fixed",
+      "ruling_planet": "sun",
+      "keywords": ["自己表現", "創造性", "自信", "注目", "誇り"],
+      "principle": "自分らしさを表現し、創造性や存在感を発揮する力を象徴する。",
+      "category_interpretations": {
+        "overall": "自己表現、自信、創造性、楽しむ姿勢",
+        "love": "愛情表現、魅力、自分らしいアプローチ",
+        "money": "自分の価値を高めること、豊かさへの意識、見栄による出費への注意",
+        "work": "リーダーシップ、企画力、成果のアピール"
+      }
+    },
+    {
+      "id": "virgo",
+      "name": "乙女座",
+      "symbol": "♍",
+      "element": "earth",
+      "modality": "mutable",
+      "ruling_planet": "mercury",
+      "keywords": ["分析", "整理", "実務", "改善", "正確さ"],
+      "principle": "細部を見極め、物事を整理し、より良い状態へ改善する力を象徴する。",
+      "category_interpretations": {
+        "overall": "整理整頓、分析、細やかな調整、改善",
+        "love": "相手への気配り、誠実な対応、関係を整えること",
+        "money": "収支の確認、細かな計算、堅実な管理",
+        "work": "実務、確認作業、分析、ミスの修正"
+      }
+    },
+    {
+      "id": "libra",
+      "name": "天秤座",
+      "symbol": "♎",
+      "element": "air",
+      "modality": "cardinal",
+      "ruling_planet": "venus",
+      "keywords": ["調和", "公平", "社交性", "美意識", "交渉"],
+      "principle": "他者との関係やバランスを意識し、調和の取れた関係を築く力を象徴する。",
+      "category_interpretations": {
+        "overall": "人との交流、調整、バランス感覚",
+        "love": "パートナーシップ、対話、互いを尊重する関係",
+        "money": "公平な取引、価値の比較、協力による利益",
+        "work": "交渉、調整、協力、対人関係を活かした仕事"
+      }
+    },
+    {
+      "id": "scorpio",
+      "name": "蠍座",
+      "symbol": "♏",
+      "element": "water",
+      "modality": "fixed",
+      "ruling_planet": "pluto",
+      "traditional_ruler": "mars",
+      "keywords": ["集中", "探究", "深い絆", "変容", "洞察"],
+      "principle": "物事の本質を深く探り、強い意志で変化や再生に向き合う力を象徴する。",
+      "category_interpretations": {
+        "overall": "集中力、洞察、深い探究、根本的な見直し",
+        "love": "深い愛情、信頼、親密さ、執着との向き合い方",
+        "money": "共有財産、資産の見直し、資金の流れやリスクの把握",
+        "work": "専門性、調査、問題の核心を見抜く力"
+      }
+    },
+    {
+      "id": "sagittarius",
+      "name": "射手座",
+      "symbol": "♐",
+      "element": "fire",
+      "modality": "mutable",
+      "ruling_planet": "jupiter",
+      "keywords": ["冒険", "自由", "成長", "探求", "可能性"],
+      "principle": "未知の世界へ視野を広げ、経験や学びを通じて成長する力を象徴する。",
+      "category_interpretations": {
+        "overall": "新しい経験、自由な発想、視野の拡大",
+        "love": "開放的な交流、一緒に楽しむこと、価値観の共有",
+        "money": "大きな可能性への期待、投資判断の慎重さ、楽観しすぎない姿勢",
+        "work": "新しい挑戦、将来の展望、専門性や知識の拡大"
+      }
+    },
+    {
+      "id": "capricorn",
+      "name": "山羊座",
+      "symbol": "♑",
+      "element": "earth",
+      "modality": "cardinal",
+      "ruling_planet": "saturn",
+      "keywords": ["責任", "計画", "努力", "達成", "社会性"],
+      "principle": "現実的な目標を定め、責任を持って努力を積み重ねる力を象徴する。",
+      "category_interpretations": {
+        "overall": "計画性、責任感、長期的な目標への取り組み",
+        "love": "誠実さ、信頼、将来を見据えた関係づくり",
+        "money": "長期的な資産管理、節度、現実的な金銭計画",
+        "work": "責任ある仕事、目標達成、着実な成果づくり"
+      }
+    },
+    {
+      "id": "aquarius",
+      "name": "水瓶座",
+      "symbol": "♒",
+      "element": "air",
+      "modality": "fixed",
+      "ruling_planet": "uranus",
+      "traditional_ruler": "saturn",
+      "keywords": ["独創性", "自由", "革新", "平等", "ネットワーク"],
+      "principle": "既存の枠にとらわれず、新しい考え方や仲間とのつながりを生み出す力を象徴する。",
+      "category_interpretations": {
+        "overall": "独創的な発想、自由な視点、新しいつながり",
+        "love": "対等な関係、個性の尊重、友人関係からの発展",
+        "money": "新しい仕組みや技術への関心、独自の判断、変動への注意",
+        "work": "革新的なアイデア、チームワーク、新しい働き方"
+      }
+    },
+    {
+      "id": "pisces",
+      "name": "魚座",
+      "symbol": "♓",
+      "element": "water",
+      "modality": "mutable",
+      "ruling_planet": "neptune",
+      "traditional_ruler": "jupiter",
+      "keywords": ["共感", "直感", "想像力", "受容", "癒やし"],
+      "principle": "目に見えない感情やイメージを受け取り、共感や想像力を広げる力を象徴する。",
+      "category_interpretations": {
+        "overall": "直感、共感、想像力、柔軟な受け止め方",
+        "love": "ロマンチックな感情、思いやり、相手への共感",
+        "money": "直感と現実的な確認の両立、曖昧な金銭判断への注意",
+        "work": "創造的な仕事、柔軟な対応、感性を活かす活動"
+      }
+    }
+  ]
+}
