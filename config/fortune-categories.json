@@ -32,16 +32,20 @@
           "name": "愛情表現"
         }
       ]
-    },
+    },  
     {
       "id": "money",
       "name": "金運",
-      "description": "収入、臨時収入、財産、偶然の幸運、宝くじやギャンブルなど、金銭や運試しに関する流れを読み解く。",
+      "description": "収入、臨時収入、財産、資産運用、株式投資、金銭的な機会、宝くじやギャンブルに関する運勢。",
       "is_default": false,
       "subcategories": [
         {
           "id": "income",
           "name": "収入・臨時収入"
+        },
+        {
+          "id": "investment",
+          "name": "株式投資・資産運用"
         },
         {
           "id": "fortune",
