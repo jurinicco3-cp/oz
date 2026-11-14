@@ -1,1 +1,85 @@
-
+{
+  "version": "1.0.0",
+  "language": "ja",
+  "categories": [
+    {
+      "id": "overall",
+      "name": "全体運",
+      "description": "1日の星の動きを総合的に読み解き、時間帯ごとの行動のヒントを提供する。",
+      "is_default": true,
+      "subcategories": []
+    },
+    {
+      "id": "love",
+      "name": "恋愛運",
+      "description": "恋愛、出会い、愛情表現、パートナーシップに関する時間帯ごとの流れを読み解く。",
+      "is_default": false,
+      "subcategories": [
+        {
+          "id": "encounter",
+          "name": "出会い"
+        },
+        {
+          "id": "communication",
+          "name": "連絡・コミュニケーション"
+        },
+        {
+          "id": "relationship",
+          "name": "関係の進展"
+        },
+        {
+          "id": "affection",
+          "name": "愛情表現"
+        }
+      ]
+    },
+    {
+      "id": "money",
+      "name": "金運",
+      "description": "収入、臨時収入、財産、偶然の幸運、宝くじやギャンブルなど、金銭や運試しに関する流れを読み解く。",
+      "is_default": false,
+      "subcategories": [
+        {
+          "id": "income",
+          "name": "収入・臨時収入"
+        },
+        {
+          "id": "fortune",
+          "name": "宝くじ・懸賞・偶然の幸運"
+        },
+        {
+          "id": "gambling",
+          "name": "勝負運・ギャンブル"
+        },
+        {
+          "id": "assets",
+          "name": "財産・資産"
+        }
+      ]
+    },
+    {
+      "id": "work",
+      "name": "仕事運",
+      "description": "仕事、業務、会議、交渉、キャリア、目標達成など、仕事や社会的活動の流れを読み解く。",
+      "is_default": false,
+      "subcategories": [
+        {
+          "id": "productivity",
+          "name": "作業・実務"
+        },
+        {
+          "id": "communication",
+          "name": "会議・交渉・連絡"
+        },
+        {
+          "id": "planning",
+          "name": "計画・判断"
+        },
+        {
+          "id": "career",
+          "name": "キャリア・目標達成"
+        }
+      ]
+    }
+  ]
+}
