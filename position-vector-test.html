@@ -292,6 +292,21 @@
     const date = new Date(test.utc);
     const time = Astronomy.MakeTime(date);
 
+    // Astronomy Engine内部の時刻情報
+  const timeCheck = {
+    utc: time.date.toISOString(),
+  
+    ut_days: time.ut,
+    tt_days: time.tt,
+  
+    delta_t_seconds:
+      (time.tt - time.ut) * 86400,
+  
+    astroTimeFromTT_available:
+      typeof Astronomy.AstroTime?.FromTerrestrialTime
+        === "function"
+  };
+
     // 海王星の太陽中心ベクトルを取得
     // Astronomy Engineの出力座標系はEQJ
     const neptuneEqj = Astronomy.HelioVector(
