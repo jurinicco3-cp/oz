@@ -1,1 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JPLベクトル比較テスト</title>
 
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 16px;
+      color: #333;
+    }
+
+    h1 { font-size: 24px; }
+
+    button {
+      padding: 10px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      margin: 15px 0;
+    }
+
+    #status {
+      padding: 12px;
+      background: #f5f5f5;
+      margin: 15px 0;
+      white-space: pre-wrap;
+    }
+
+    .success { color: #16803c; }
+    .error { color: #c62828; }
+
+    .note {
+      background: #f5f5f5;
+      padding: 12px;
+      line-height: 1.7;
+      margin: 15px 0;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0 25px;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 9px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th { background: #f3f3f3; }
+
+    pre {
+      overflow-x: auto;
+      background: #f5f5f5;
+      padding: 12px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>JPLベクトル比較テスト</h1>
+
+  <p>
+    Astronomy EngineとJPL Horizonsの
+    土星・海王星の地心ベクトルを比較します。
+  </p>
+
+  <div class="note">
+    <strong>検証条件</strong><br>
+    JPL基準時刻：2026-12-14 03:00:00 TDB<br>
+    座標系：JPL ICRF / Astronomy Engine EQJ<br>
+    JPL補正：Light-time corrected<br>
+    Astronomy Engine：光行時間補正あり<br>
+    光行差：あり・なしの両方を比較
+  </div>
+
+  <button id="calculate">比較計算する</button>
+
+  <div id="status">計算待機中です。</div>
+
+  <h2>比較結果</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>天体</th>
+          <th>時刻</th>
+          <th>光行差</th>
+          <th>ΔX (AU)</th>
+          <th>ΔY (AU)</th>
+          <th>ΔZ (AU)</th>
+          <th>方向の差 (秒角)</th>
+          <th>距離の差 (AU)</th>
+        </tr>
+      </thead>
+      <tbody id="results">
+        <tr>
+          <td colspan="8">まだ計算されていません。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>JSON出力</h2>
+  <pre id="raw">未実行</pre>
+
+  <script src="./astronomy/astronomy.browser.min.js"></script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    // ------------------------------------
+    // 1. 時刻設定
+    // ------------------------------------
+
+    // JPLのTDB 03:00:00に対応するUTC時刻。
+    // 2026年12月14日のTDB - UTCは約69.183403秒。
+    const UTC_START =
+      "2026-12-14T02:58:50.8166Z";
+
+    const TDB_UTC_OFFSET_SECONDS = 69.183403;
+
+    // ------------------------------------
+    // 2. JPL基準データ
+    // 単位：AU
+    // ------------------------------------
+
+    const JPL_DATA = {
+      saturn: {
+        name: "土星",
+        body: "Saturn",
+        epochs: [
+          {
+            tdb: "2026-12-14 03:00:00",
+            x: 9.008529382461564,
+            y: 1.256703674036254,
+            z: 0.1067497124401124
+          },
+          {
+            tdb: "2026-12-14 03:01:00",
+            x: 9.008540294886087,
+            y: 1.256705602360992,
+            z: 0.1067505256541040
+          }
+        ]
+      },
+
+      neptune: {
+        name: "海王星",
+        body: "Neptune",
+        epochs: [
+          {
+            tdb: "2026-12-14 03:00:00",
+            x: 29.68268873566766,
+            y: 0.8727898654470698,
+            z: -0.4068455831799894
+          },
+          {
+            tdb: "2026-12-14 03:01:00",
+            x: 29.68270062096610,
+            y: 0.8727903594459737,
+            z: -0.4068454143825279
+          }
+        ]
+      }
+    };
+
+    // ------------------------------------
+    // 3. ベクトル計算
+    // ------------------------------------
+
+    function vectorLength(v) {
+      return Math.sqrt(
+        v.x * v.x +
+        v.y * v.y +
+        v.z * v.z
+      );
+    }
+
+    function subtractVectors(a, b) {
+      return {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z
+      };
+    }
+
+    function angleBetweenVectors(a, b) {
+      const dot =
+        a.x * b.x +
+        a.y * b.y +
+        a.z * b.z;
+
+      const denominator =
+        vectorLength(a) * vectorLength(b);
+
+      const cosine = Math.max(
+        -1,
+        Math.min(1, dot / denominator)
+      );
+
+      return Math.acos(cosine);
+    }
+
+    // ------------------------------------
+    // 4. UTC日時を作る
+    // ------------------------------------
+
+    function getUtcDate(epochIndex) {
+      const start = new Date(UTC_START);
+
+      return new Date(
+        start.getTime() +
+        epochIndex * 60 * 1000
+      );
+    }
+
+    // ------------------------------------
+    // 5. Astronomy Engineの計算
+    // ------------------------------------
+
+    function calculateAE(bodyName, date, aberration) {
+      const body = Astronomy.Body[bodyName];
+
+      if (!body) {
+        throw new Error(
+          "天体が見つかりません: " + bodyName
+        );
+      }
+
+      const time = Astronomy.MakeTime(date);
+
+      const vector = Astronomy.GeoVector(
+        body,
+        time,
+        aberration
+      );
+
+      return {
+        x: vector.x,
+        y: vector.y,
+        z: vector.z
+      };
+    }
+
+    // ------------------------------------
+    // 6. 比較処理
+    // ------------------------------------
+
+    function compareVectors(jpl, ae) {
+      const delta = subtractVectors(ae, jpl);
+
+      const angle =
+        angleBetweenVectors(jpl, ae);
+
+      const distanceDifference =
+        vectorLength(ae) - vectorLength(jpl);
+
+      return {
+        delta_x_au: delta.x,
+        delta_y_au: delta.y,
+        delta_z_au: delta.z,
+
+        direction_difference_arcsec:
+          angle * 180 / Math.PI * 3600,
+
+        distance_difference_au:
+          distanceDifference,
+
+        vector_difference_au:
+          vectorLength(delta)
+      };
+    }
+
+    // ------------------------------------
+    // 7. 表示処理
+    // ------------------------------------
+
+    function addCell(row, value) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    }
+
+    function runTest() {
+      $("status").textContent = "計算中...";
+      $("status").className = "";
+      $("results").innerHTML = "";
+      $("raw").textContent = "";
+
+      try {
+        if (
+          !window.Astronomy ||
+          !Astronomy.GeoVector ||
+          !Astronomy.MakeTime
+        ) {
+          throw new Error(
+            "Astronomy Engineが正しく読み込まれていません。"
+          );
+        }
+
+        const output = {
+          test_name: "JPL vector comparison",
+          jpl_epoch: "2026-12-14 03:00:00 TDB",
+          utc_start: UTC_START,
+          tdb_minus_utc_seconds:
+            TDB_UTC_OFFSET_SECONDS,
+
+          jpl_reference_frame: "ICRF",
+          astronomy_engine_frame: "EQJ",
+
+          jpl_correction:
+            "light_time_corrected",
+
+          astronomy_engine_correction:
+            "light_time_corrected",
+
+          note:
+            "ICRF and EQJ frame difference is not corrected in this test.",
+
+          results: []
+        };
+
+        for (const key of Object.keys(JPL_DATA)) {
+          const target = JPL_DATA[key];
+
+          for (let i = 0; i < 2; i++) {
+            const reference = target.epochs[i];
+            const date = getUtcDate(i);
+
+            const jplVector = {
+              x: reference.x,
+              y: reference.y,
+              z: reference.z
+            };
+
+            // 光行差補正なし
+            const aeWithout = calculateAE(
+              target.body,
+              date,
+              false
+            );
+
+            // 光行差補正あり
+            const aeWith = calculateAE(
+              target.body,
+              date,
+              true
+            );
+
+            const resultWithout =
+              compareVectors(jplVector, aeWithout);
+
+            const resultWith =
+              compareVectors(jplVector, aeWith);
+
+            const item = {
+              planet: key,
+              name: target.name,
+              tdb: reference.tdb,
+              utc: date.toISOString(),
+
+              jpl_vector_au: jplVector,
+
+              astronomy_engine_without_aberration:
+                aeWithout,
+
+              astronomy_engine_with_aberration:
+                aeWith,
+
+              comparison_without_aberration:
+                resultWithout,
+
+              comparison_with_aberration:
+                resultWith
+            };
+
+            output.results.push(item);
+
+            // 表：光行差なし
+            const rowWithout =
+              document.createElement("tr");
+
+            addCell(rowWithout, target.name);
+            addCell(rowWithout, reference.tdb);
+            addCell(rowWithout, "なし");
+
+            addCell(
+              rowWithout,
+              resultWithout.delta_x_au.toExponential(8)
+            );
+
+            addCell(
+              rowWithout,
+              resultWithout.delta_y_au.toExponential(8)
+            );
+
+            addCell(
+              rowWithout,
+              resultWithout.delta_z_au.toExponential(8)
+            );
+
+            addCell(
+              rowWithout,
+              resultWithout.direction_difference_arcsec.toFixed(5)
+            );
+
+            addCell(
+              rowWithout,
+              resultWithout.distance_difference_au.toExponential(8)
+            );
+
+            $("results").appendChild(rowWithout);
+
+            // 表：光行差あり
+            const rowWith =
+              document.createElement("tr");
+
+            addCell(rowWith, target.name);
+            addCell(rowWith, reference.tdb);
+            addCell(rowWith, "あり");
+
+            addCell(
+              rowWith,
+              resultWith.delta_x_au.toExponential(8)
+            );
+
+            addCell(
+              rowWith,
+              resultWith.delta_y_au.toExponential(8)
+            );
+
+            addCell(
+              rowWith,
+              resultWith.delta_z_au.toExponential(8)
+            );
+
+            addCell(
+              rowWith,
+              resultWith.direction_difference_arcsec.toFixed(5)
+            );
+
+            addCell(
+              rowWith,
+              resultWith.distance_difference_au.toExponential(8)
+            );
+
+            $("results").appendChild(rowWith);
+          }
+        }
+
+        $("status").textContent =
+          "比較計算が完了しました。\n" +
+          "土星・海王星、各2時点の比較を実施しました。";
+
+        $("status").className = "success";
+
+        $("raw").textContent =
+          JSON.stringify(output, null, 2);
+
+      } catch (error) {
+        $("status").textContent =
+          "エラー: " + error.message;
+
+        $("status").className = "error";
+
+        $("raw").textContent =
+          error.stack || error.message;
+
+        console.error(error);
+      }
+    }
+
+    $("calculate").addEventListener(
+      "click",
+      runTest
+    );
+
+  </script>
+
+</body>
+</html>
