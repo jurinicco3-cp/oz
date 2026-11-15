@@ -292,20 +292,12 @@
     const date = new Date(test.utc);
     const time = Astronomy.MakeTime(date);
 
-    // Astronomy Engine内部の時刻情報
-  const timeCheck = {
-    utc: time.date.toISOString(),
-  
-    ut_days: time.ut,
-    tt_days: time.tt,
-  
-    delta_t_seconds:
-      (time.tt - time.ut) * 86400,
-  
-    astroTimeFromTT_available:
-      typeof Astronomy.AstroTime?.FromTerrestrialTime
-        === "function"
-  };
+   const timeCheck = {
+  utc: time.date.toISOString(),
+  ut_days: time.ut,
+  tt_days: time.tt,
+  delta_t_seconds: (time.tt - time.ut) * 86400
+};
 
     // 海王星の太陽中心ベクトルを取得
     // Astronomy Engineの出力座標系はEQJ
@@ -336,9 +328,11 @@
     );
 
     return {
-      date: test.date,
-      tdb: test.date + " 03:00:00",
-      utc_input: date.toISOString(),
+  date: test.date,
+  tdb: test.date + " 03:00:00",
+  utc_input: date.toISOString(),
+
+  time_check: timeCheck,
 
       jpl_frame: "Ecliptic of J2000.0",
       astronomy_engine_original_frame: "EQJ",
@@ -421,6 +415,9 @@
 
       utc_input:
         result.utc_input,
+     
+       time_check:
+  result.time_check,
 
       astronomy_engine_raw_eqj:
         result.astronomy_engine_raw_eqj,
