@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -75,16 +76,19 @@
 
   <p>
     Astronomy EngineとJPL Horizonsの
-    土星・海王星の地心ベクトルを比較します。
+    地心ベクトルを比較します。
   </p>
 
   <div class="note">
     <strong>検証条件</strong><br>
-    JPL基準時刻：2026-12-14 03:00:00 TDB<br>
+    JPL基準時刻：2026-11-14 03:00:00 TDB<br>
     座標系：JPL ICRF / Astronomy Engine EQJ<br>
     JPL補正：Light-time corrected<br>
     Astronomy Engine：光行時間補正あり<br>
-    光行差：あり・なしの両方を比較
+    光行差：あり・なしの両方を比較<br>
+    <br>
+    ※ 現在は海王星のみ比較します。
+    土星の11月14日のJPLデータは未登録です。
   </div>
 
   <button id="calculate">比較計算する</button>
@@ -127,10 +131,9 @@
     // 1. 時刻設定
     // ------------------------------------
 
-    // JPLのTDB 03:00:00に対応するUTC時刻。
-    // 2026年12月14日のTDB - UTCは約69.183403秒。
-    const UTC_START =
-      "2026-11-14T02:58:50.8166Z";
+    // JPLのTDB 03:00:00に対応するUTC時刻
+    // TDB - UTC 約69.183403秒
+    const UTC_START = "2026-11-14T02:58:50.8166Z";
 
     const TDB_UTC_OFFSET_SECONDS = 69.183403;
 
@@ -140,25 +143,6 @@
     // ------------------------------------
 
     const JPL_DATA = {
-      saturn: {
-        name: "土星",
-        body: "Saturn",
-        epochs: [
-          {
-            tdb: "2026-12-14 03:00:00",
-            x: 9.008529382461564,
-            y: 1.256703674036254,
-            z: 0.1067497124401124
-          },
-          {
-            tdb: "2026-12-14 03:01:00",
-            x: 9.008540294886087,
-            y: 1.256705602360992,
-            z: 0.1067505256541040
-          }
-        ]
-      },
-
       neptune: {
         name: "海王星",
         body: "Neptune",
@@ -296,6 +280,10 @@
       row.appendChild(cell);
     }
 
+    // ------------------------------------
+    // 8. メイン処理
+    // ------------------------------------
+
     function runTest() {
       $("status").textContent = "計算中...";
       $("status").className = "";
@@ -315,8 +303,9 @@
 
         const output = {
           test_name: "JPL vector comparison",
-          jpl_epoch: "2026-12-14 03:00:00 TDB",
+          jpl_epoch: "2026-11-14 03:00:00 TDB",
           utc_start: UTC_START,
+
           tdb_minus_utc_seconds:
             TDB_UTC_OFFSET_SECONDS,
 
@@ -338,7 +327,7 @@
         for (const key of Object.keys(JPL_DATA)) {
           const target = JPL_DATA[key];
 
-          for (let i = 0; i < 2; i++) {
+          for (let i = 0; i < target.epochs.length; i++) {
             const reference = target.epochs[i];
             const date = getUtcDate(i);
 
@@ -391,7 +380,7 @@
 
             output.results.push(item);
 
-            // 表：光行差なし
+            // 光行差なし
             const rowWithout =
               document.createElement("tr");
 
@@ -426,7 +415,7 @@
 
             $("results").appendChild(rowWithout);
 
-            // 表：光行差あり
+            // 光行差あり
             const rowWith =
               document.createElement("tr");
 
@@ -465,7 +454,7 @@
 
         $("status").textContent =
           "比較計算が完了しました。\n" +
-          "土星・海王星、各2時点の比較を実施しました。";
+          "海王星、2時点の比較を実施しました。";
 
         $("status").className = "success";
 
