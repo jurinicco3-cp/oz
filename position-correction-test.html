@@ -1,13 +1,15 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>天体位置計算テスト</title>
+  <title>光行差補正比較テスト</title>
+
   <style>
     body {
       font-family: sans-serif;
-      max-width: 900px;
+      max-width: 1000px;
       margin: 30px auto;
       padding: 0 16px;
       color: #333;
@@ -65,19 +67,26 @@
       color: #c62828;
     }
 
-    #raw {
-      overflow-x: auto;
+    .note {
       background: #f5f5f5;
       padding: 12px;
+      margin-top: 16px;
+      line-height: 1.7;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
     }
   </style>
 </head>
+
 <body>
 
-  <h1>天体位置計算テスト</h1>
+  <h1>光行差補正比較テスト</h1>
 
   <p>
-    Astronomy Engineを使用して10天体の地心黄経を計算します。
+    Astronomy Engineを使用して、土星と海王星の
+    光行差補正あり・なしの黄経を比較します。
   </p>
 
   <div class="controls">
@@ -86,116 +95,105 @@
       <input type="datetime-local" id="datetime">
     </label>
 
-    <button id="calculate">計算する</button>
+    <button id="calculate">比較計算する</button>
   </div>
 
   <div id="status">計算待機中です。</div>
 
-  <h2>計算結果</h2>
+  <h2>比較結果</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>天体</th>
-        <th>黄経</th>
-        <th>星座</th>
-        <th>星座内度数</th>
-      </tr>
-    </thead>
-    <tbody id="results">
-      <tr>
-        <td colspan="4">まだ計算されていません。</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>天体</th>
+          <th>補正あり</th>
+          <th>補正なし</th>
+          <th>補正による変化</th>
+          <th>JPLとの差（補正あり）</th>
+          <th>JPLとの差（補正なし）</th>
+        </tr>
+      </thead>
 
-  <h2>基本チェック</h2>
-  <div id="checks">未実行</div>
+      <tbody id="results">
+        <tr>
+          <td colspan="6">まだ計算されていません。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong>計算条件</strong><br>
+    ・地心位置<br>
+    ・黄道座標への変換はAstronomy.Ecliptic()を使用<br>
+    ・光行時間補正は両方とも有効<br>
+    ・光行差補正のみtrue / falseで切り替え<br>
+    ・JPLとの比較は2026年12月14日03:00 UTCのみ
+  </div>
 
   <h2>JSON出力</h2>
   <pre id="raw">未実行</pre>
 
   <script src="./astronomy/astronomy.browser.min.js"></script>
-  <script src="./engine/position-calculator.js"></script>
 
   <script>
     const $ = (id) => document.getElementById(id);
 
-    const planetNames = {
-      sun: "太陽",
-      moon: "月",
-      mercury: "水星",
-      venus: "金星",
-      mars: "火星",
-      jupiter: "木星",
-      saturn: "土星",
-      uranus: "天王星",
-      neptune: "海王星",
-      pluto: "冥王星"
+    // JPL Horizonsの基準値
+    // 2026年12月14日 03:00 UTC
+    const JPL_REFERENCE = {
+      saturn: 7.9400792,
+      neptune: 1.6133162
     };
 
-    function runChecks(data) {
-      const entries = Object.entries(data.planets);
-      const checks = [];
+    // 比較対象
+    const TARGETS = [
+      {
+        id: "saturn",
+        name: "土星",
+        bodyName: "Saturn"
+      },
+      {
+        id: "neptune",
+        name: "海王星",
+        bodyName: "Neptune"
+      }
+    ];
 
-      checks.push({
-        name: "10天体の取得",
-        passed: entries.length === 10
-      });
+    // 黄経を0〜360度に正規化
+    function normalizeLongitude(degrees) {
+      return ((degrees % 360) + 360) % 360;
+    }
 
-      checks.push({
-        name: "黄経が0以上360未満",
-        passed: entries.every(
-          ([, p]) =>
-            Number.isFinite(p.longitude) &&
-            p.longitude >= 0 &&
-            p.longitude < 360
-        )
-      });
+    // 角度差を-180〜180度に収める
+    function angleDifference(a, b) {
+      return ((a - b + 540) % 360) - 180;
+    }
 
-      checks.push({
-        name: "星座が12星座のいずれか",
-        passed: entries.every(
-          ([, p]) =>
-            PositionCalculator.planets.includes(
-              Object.keys(data.planets).find(
-                key => data.planets[key] === p
-              )
-            ) &&
-            typeof p.sign === "string"
-        )
-      });
+    // 天体の黄経を取得
+    function getLongitude(body, time, aberration) {
+      const vector = Astronomy.GeoVector(
+        body,
+        time,
+        aberration
+      );
 
-      checks.push({
-        name: "星座内度数が0以上30未満",
-        passed: entries.every(
-          ([, p]) =>
-            Number.isFinite(p.degree_in_sign) &&
-            p.degree_in_sign >= 0 &&
-            p.degree_in_sign < 30
-        )
-      });
+      const ecliptic = Astronomy.Ecliptic(vector);
 
-      $("checks").innerHTML = checks.map(check => `
-        <p class="${check.passed ? "success" : "error"}">
-          ${check.passed ? "✓" : "✗"} ${check.name}
-        </p>
-      `).join("");
-
-      return checks.every(check => check.passed);
+      return normalizeLongitude(ecliptic.elon);
     }
 
     function calculate() {
       $("status").textContent = "計算中...";
       $("status").className = "";
       $("results").innerHTML = "";
-      $("checks").textContent = "検証中...";
       $("raw").textContent = "";
 
       try {
-        if (!window.PositionCalculator) {
+        if (!window.Astronomy) {
           throw new Error(
-            "PositionCalculatorが読み込まれていません。"
+            "Astronomy Engineが読み込まれていません。"
           );
         }
 
@@ -207,18 +205,97 @@
 
         const date = new Date(value);
 
-        const data =
-          PositionCalculator.calculatePositions(date);
+        if (Number.isNaN(date.getTime())) {
+          throw new Error("日時が正しくありません。");
+        }
 
-        for (const [key, planet] of Object.entries(data.planets)) {
+        const time = Astronomy.MakeTime(date);
+
+        const isReferenceDate =
+          date.toISOString() ===
+          "2026-12-14T03:00:00.000Z";
+
+        const output = {
+          datetime: date.toISOString(),
+          coordinate_system:
+            "geocentric_true_ecliptic_of_date",
+          zodiac: "tropical",
+          comparison: "stellar_aberration_on_off",
+          light_time_correction: true,
+          results: {}
+        };
+
+        for (const target of TARGETS) {
+          const body = Astronomy.Body[target.bodyName];
+
+          if (!body) {
+            throw new Error(
+              target.name + "の天体情報を取得できません。"
+            );
+          }
+
+          // 光行差補正あり
+          const withAberration =
+            getLongitude(body, time, true);
+
+          // 光行差補正なし
+          const withoutAberration =
+            getLongitude(body, time, false);
+
+          // 補正による経度変化（秒角）
+          const correctionDifference =
+            angleDifference(
+              withAberration,
+              withoutAberration
+            ) * 3600;
+
+          let jplWith = null;
+          let jplWithout = null;
+
+          if (isReferenceDate) {
+            jplWith =
+              angleDifference(
+                withAberration,
+                JPL_REFERENCE[target.id]
+              ) * 3600;
+
+            jplWithout =
+              angleDifference(
+                withoutAberration,
+                JPL_REFERENCE[target.id]
+              ) * 3600;
+          }
+
+          output.results[target.id] = {
+            name: target.name,
+            longitude_with_aberration:
+              withAberration,
+            longitude_without_aberration:
+              withoutAberration,
+            correction_difference_arcsec:
+              correctionDifference,
+            jpl_difference_with_arcsec:
+              jplWith,
+            jpl_difference_without_arcsec:
+              jplWithout
+          };
+
           const row = document.createElement("tr");
 
-          [
-            planetNames[key] || key,
-            planet.longitude.toFixed(6) + "°",
-            planet.sign,
-            planet.degree_in_sign.toFixed(6) + "°"
-          ].forEach(value => {
+          const values = [
+            target.name,
+            withAberration.toFixed(9) + "°",
+            withoutAberration.toFixed(9) + "°",
+            correctionDifference.toFixed(4) + "″",
+            jplWith === null
+              ? "比較対象外"
+              : jplWith.toFixed(4) + "″",
+            jplWithout === null
+              ? "比較対象外"
+              : jplWithout.toFixed(4) + "″"
+          ];
+
+          values.forEach(value => {
             const cell = document.createElement("td");
             cell.textContent = value;
             row.appendChild(cell);
@@ -227,29 +304,34 @@
           $("results").appendChild(row);
         }
 
-        const passed = runChecks(data);
+        $("status").textContent =
+          "比較計算が完了しました。";
 
-        $("status").textContent = passed
-          ? "計算完了。基本チェックはすべて合格しました。"
-          : "計算は完了しましたが、一部の基本チェックに失敗しました。";
-
-        $("status").className = passed ? "success" : "error";
+        $("status").className = "success";
 
         $("raw").textContent =
-          JSON.stringify(data, null, 2);
+          JSON.stringify(output, null, 2);
 
       } catch (error) {
         $("status").textContent =
-          "エラー： " + error.message;
+          "エラー：" + error.message;
 
         $("status").className = "error";
-        $("checks").textContent = "検証できませんでした。";
+
+        $("raw").textContent = error.stack || error.message;
+
         console.error(error);
       }
     }
 
-    $("datetime").value = "2026-11-14T12:00";
-    $("calculate").addEventListener("click", calculate);
+    // 初期日時：2026年12月14日 12:00 JST
+    $("datetime").value = "2026-12-14T12:00";
+
+    $("calculate").addEventListener(
+      "click",
+      calculate
+    );
+
   </script>
 
 </body>
