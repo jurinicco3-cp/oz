@@ -4,184 +4,562 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Neptune JPL Vector Comparison</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 24px;
+      color: #222;
+      background: #f7f8fa;
+      line-height: 1.6;
+    }
+
+    h1, h2, h3 {
+      color: #253858;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .card {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2457a7;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 9px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #edf1f7;
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+
+    pre {
+      background: #20252d;
+      color: #e7edf5;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      background: #e8f5e9;
+      color: #21632a;
+      margin: 16px 0;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #b71c1c;
+      padding: 12px;
+      border-radius: 8px;
+    }
+  </style>
 </head>
+
 <body>
+
+<div class="container">
+
   <h1>Neptune JPL Vector Comparison</h1>
-  <pre id="output">計算中...</pre>
 
-  <script src="./astronomy/astronomy.browser.min.js"></script>
-  <script>
-    console.log("Astronomy Engine:", window.Astronomy);
-    console.log(
-      "MakeTime:",
-      typeof window.Astronomy?.MakeTime
+  <p>
+    Astronomy EngineとJPL Horizonsの
+    Neptune幾何学的ベクトル比較テスト
+  </p>
+
+  <div id="status" class="status">
+    計算準備中...
+  </div>
+
+  <div id="output">
+    計算中...
+  </div>
+
+</div>
+
+<!-- Astronomy Engine -->
+<script src="astronomy/astronomy.browser.min.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  const Astronomy = window.Astronomy;
+
+  const statusElement = document.getElementById("status");
+  const outputElement = document.getElementById("output");
+
+  // ==========================================
+  // 1. ライブラリ確認
+  // ==========================================
+
+  if (!Astronomy) {
+    showError(
+      "Astronomy Engineが読み込まれていません。" +
+      "scriptのパスを確認してください。"
     );
-  </script>
-  <script>
-    const Astronomy = window.Astronomy;
+    return;
+  }
 
-    // JPL Horizons GEOMETRIC / ICRF / AU-D
-    const testCases = [
-      {
-        name: "2026-11-14",
-        utcStart: "2026-11-14T02:58:50.8166Z",
-        jpl: [
-          {
-            x: 29.21204567131619,
-            y: 0.9704283284204748,
-            z: -0.3625580818067131
-          },
-          {
-            x: 29.21205507508567,
-            y: 0.9704235523297892,
-            z: -0.3625601978747961
-          }
-        ]
-      },
-      {
-        name: "2026-12-14",
-        utcStart: "2026-12-14T02:58:50.8166Z",
-        jpl: [
-          {
-            x: 29.68265615139564,
-            y: 0.8732901572584891,
-            z: -0.4066400304434343
-          },
-          {
-            x: 29.68266803659555,
-            y: 0.8732906514471209,
-            z: -0.4066398615137103
-          }
-        ]
-      }
-    ];
+  if (
+    typeof Astronomy.MakeTime !== "function" ||
+    typeof Astronomy.HelioVector !== "function"
+  ) {
+    showError(
+      "Astronomy Engineの必要なAPIが見つかりません。"
+    );
+    return;
+  }
 
-    function subtractVectors(a, b) {
-      return {
-        x: a.x - b.x,
-        y: a.y - b.y,
-        z: a.z - b.z
-      };
-    }
+  if (!Astronomy.Body) {
+    showError("Astronomy.Bodyが見つかりません。");
+    return;
+  }
 
-    function dot(a, b) {
-      return a.x * b.x + a.y * b.y + a.z * b.z;
-    }
+  // ==========================================
+  // 2. JPL Horizons GEOMETRICデータ
+  // ==========================================
 
-    function magnitude(v) {
-      return Math.sqrt(dot(v, v));
-    }
+  const testCases = [
+    {
+      name: "2026-11-14",
 
-    function compareVectors(jpl, ae) {
-      const delta = {
-        x: ae.x - jpl.x,
-        y: ae.y - jpl.y,
-        z: ae.z - jpl.z
-      };
+      utcStart: "2026-11-14T02:58:50.8166Z",
 
-      const cosAngle = Math.max(
-        -1,
-        Math.min(
-          1,
-          dot(jpl, ae) / (magnitude(jpl) * magnitude(ae))
-        )
-      );
-
-      const angleArcsec =
-        Math.acos(cosAngle) * 180 / Math.PI * 3600;
-
-      return {
-        delta_x_au: delta.x,
-        delta_y_au: delta.y,
-        delta_z_au: delta.z,
-        direction_difference_arcsec: angleArcsec,
-        distance_difference_au:
-          magnitude(ae) - magnitude(jpl),
-        vector_difference_au: magnitude(delta)
-      };
-    }
-
-    function calculateAE(date) {
-      const time = Astronomy.MakeTime(date);
-
-      const neptune = Astronomy.HelioVector(
-        Astronomy.Body.Neptune,
-        time
-      );
-
-      const earth = Astronomy.HelioVector(
-        Astronomy.Body.Earth,
-        time
-      );
-
-      return subtractVectors(neptune, earth);
-    }
-
-    function runTest() {
-      const results = [];
-
-      for (const test of testCases) {
-        const start = new Date(test.utcStart);
-
-        for (let i = 0; i < 2; i++) {
-          const date = new Date(start.getTime() + i * 60000);
-
-          const aeVector = calculateAE(date);
-          const jplVector = test.jpl[i];
-
-          results.push({
-            epoch: test.name,
-            minute: i,
-            utc: date.toISOString(),
-            jpl_vector_au: jplVector,
-            astronomy_engine_geometric_vector_au: aeVector,
-            comparison: compareVectors(jplVector, aeVector)
-          });
+      jpl: [
+        {
+          x: 29.21204567131619,
+          y: 0.9704283284204748,
+          z: -0.3625580818067131
+        },
+        {
+          x: 29.21205507508567,
+          y: 0.9704235523297892,
+          z: -0.3625601978747961
         }
-      }
+      ]
+    },
 
-      const directionDifferences = results.map(
-        r => r.comparison.direction_difference_arcsec
-      );
+    {
+      name: "2026-12-14",
 
-      const output = {
-        test_name: "Neptune JPL geometric vector comparison",
-        jpl_reference_frame: "ICRF",
-        astronomy_engine_frame: "EQJ",
-        jpl_correction: "GEOMETRIC",
-        astronomy_engine_calculation:
-          "HelioVector(Neptune) - HelioVector(Earth)",
-        astronomy_engine_correction:
-          "geometric_no_light_time_no_aberration",
-        note:
-          "ICRF and EQJ frame difference is not corrected. " +
-          "UTC conversion uses an approximate TDB-UTC offset.",
-        results,
-        summary: {
-          mean_direction_difference_arcsec:
-            directionDifferences.reduce((a, b) => a + b, 0) /
-            directionDifferences.length,
-          minimum_direction_difference_arcsec:
-            Math.min(...directionDifferences),
-          maximum_direction_difference_arcsec:
-            Math.max(...directionDifferences)
+      utcStart: "2026-12-14T02:58:50.8166Z",
+
+      jpl: [
+        {
+          x: 29.68265615139564,
+          y: 0.8732901572584891,
+          z: -0.4066400304434343
+        },
+        {
+          x: 29.68266803659555,
+          y: 0.8732906514471209,
+          z: -0.4066398615137103
         }
-      };
+      ]
+    }
+  ];
 
-      document.getElementById("output").textContent =
-        JSON.stringify(output, null, 2);
+  // ==========================================
+  // 3. ベクトル演算
+  // ==========================================
 
-      console.log(output);
+  function subtractVectors(a, b) {
+    return {
+      x: a.x - b.x,
+      y: a.y - b.y,
+      z: a.z - b.z
+    };
+  }
+
+  function dot(a, b) {
+    return (
+      a.x * b.x +
+      a.y * b.y +
+      a.z * b.z
+    );
+  }
+
+  function magnitude(v) {
+    return Math.sqrt(dot(v, v));
+  }
+
+  // ==========================================
+  // 4. Astronomy Engine計算
+  // ==========================================
+
+  function calculateAE(date) {
+
+    const time = Astronomy.MakeTime(date);
+
+    const neptune = Astronomy.HelioVector(
+      Astronomy.Body.Neptune,
+      time
+    );
+
+    const earth = Astronomy.HelioVector(
+      Astronomy.Body.Earth,
+      time
+    );
+
+    return subtractVectors(neptune, earth);
+  }
+
+  // ==========================================
+  // 5. ベクトル比較
+  // ==========================================
+
+  function compareVectors(jpl, ae) {
+
+    const delta = subtractVectors(ae, jpl);
+
+    const jplMagnitude = magnitude(jpl);
+    const aeMagnitude = magnitude(ae);
+
+    const cosAngle = Math.max(
+      -1,
+      Math.min(
+        1,
+        dot(jpl, ae) /
+        (jplMagnitude * aeMagnitude)
+      )
+    );
+
+    const angleArcsec =
+      Math.acos(cosAngle) *
+      180 / Math.PI *
+      3600;
+
+    return {
+      delta_x_au: delta.x,
+      delta_y_au: delta.y,
+      delta_z_au: delta.z,
+
+      direction_difference_arcsec:
+        angleArcsec,
+
+      distance_difference_au:
+        aeMagnitude - jplMagnitude,
+
+      vector_difference_au:
+        magnitude(delta)
+    };
+  }
+
+  // ==========================================
+  // 6. 全テスト実行
+  // ==========================================
+
+  function runTest() {
+
+    const results = [];
+
+    for (const test of testCases) {
+
+      const start = new Date(test.utcStart);
+
+      for (let i = 0; i < 2; i++) {
+
+        const date = new Date(
+          start.getTime() + i * 60000
+        );
+
+        const aeVector = calculateAE(date);
+        const jplVector = test.jpl[i];
+
+        const comparison = compareVectors(
+          jplVector,
+          aeVector
+        );
+
+        results.push({
+          epoch: test.name,
+          minute: i,
+          utc: date.toISOString(),
+
+          jpl_vector_au: jplVector,
+
+          astronomy_engine_geometric_vector_au:
+            aeVector,
+
+          comparison: comparison
+        });
+      }
     }
 
-    try {
-      runTest();
-    } catch (error) {
-      document.getElementById("output").textContent =
-        "エラー: " + error.message;
-      console.error(error);
-    }
-  </script>
+    // ==========================================
+    // 7. 集計
+    // ==========================================
+
+    const differences = results.map(
+      r => r.comparison.direction_difference_arcsec
+    );
+
+    const summary = {
+      mean_direction_difference_arcsec:
+        differences.reduce((a, b) => a + b, 0) /
+        differences.length,
+
+      minimum_direction_difference_arcsec:
+        Math.min(...differences),
+
+      maximum_direction_difference_arcsec:
+        Math.max(...differences)
+    };
+
+    // ==========================================
+    // 8. JSONデータ
+    // ==========================================
+
+    const output = {
+      test_name:
+        "Neptune JPL geometric vector comparison",
+
+      jpl_reference_frame: "ICRF",
+
+      astronomy_engine_frame: "EQJ",
+
+      jpl_correction: "GEOMETRIC",
+
+      astronomy_engine_calculation:
+        "HelioVector(Neptune) - HelioVector(Earth)",
+
+      astronomy_engine_correction:
+        "geometric_no_light_time_no_aberration",
+
+      note:
+        "ICRF and EQJ frame difference is not corrected. " +
+        "UTC conversion uses an approximate TDB-UTC offset.",
+
+      results: results,
+
+      summary: summary
+    };
+
+    // ==========================================
+    // 9. HTML表示用テーブル
+    // ==========================================
+
+    const rows = results.map(r => {
+
+      const c = r.comparison;
+
+      return `
+        <tr>
+          <td>${r.epoch}</td>
+          <td>${r.minute}</td>
+          <td>${c.direction_difference_arcsec.toFixed(6)}</td>
+          <td>${c.distance_difference_au.toFixed(9)}</td>
+          <td>${c.vector_difference_au.toFixed(9)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    // ==========================================
+    // 10. 詳細ベクトル表示
+    // ==========================================
+
+    const vectorDetails = results.map(r => {
+
+      return `
+        <h3>${r.epoch} / ${r.minute}分</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>項目</th>
+                <th>X (AU)</th>
+                <th>Y (AU)</th>
+                <th>Z (AU)</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td>JPL</td>
+                <td>${r.jpl_vector_au.x.toFixed(12)}</td>
+                <td>${r.jpl_vector_au.y.toFixed(12)}</td>
+                <td>${r.jpl_vector_au.z.toFixed(12)}</td>
+              </tr>
+
+              <tr>
+                <td>Astronomy Engine</td>
+                <td>${r.astronomy_engine_geometric_vector_au.x.toFixed(12)}</td>
+                <td>${r.astronomy_engine_geometric_vector_au.y.toFixed(12)}</td>
+                <td>${r.astronomy_engine_geometric_vector_au.z.toFixed(12)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          方向差：
+          <strong>
+            ${r.comparison.direction_difference_arcsec.toFixed(6)}
+            秒角
+          </strong>
+        </p>
+
+        <p>
+          ΔX：${r.comparison.delta_x_au.toFixed(12)} AU<br>
+          ΔY：${r.comparison.delta_y_au.toFixed(12)} AU<br>
+          ΔZ：${r.comparison.delta_z_au.toFixed(12)} AU
+        </p>
+      `;
+    }).join("");
+
+    // ==========================================
+    // 11. 画面描画
+    // ==========================================
+
+    statusElement.textContent =
+      "計算成功：4件のベクトル比較が完了しました。";
+
+    outputElement.innerHTML = `
+
+      <h2>方向差の集計</h2>
+
+      <div class="summary">
+
+        <div class="card">
+          <div>平均方向差</div>
+          <div class="value">
+            ${summary.mean_direction_difference_arcsec.toFixed(6)}
+          </div>
+          <div>秒角</div>
+        </div>
+
+        <div class="card">
+          <div>最小方向差</div>
+          <div class="value">
+            ${summary.minimum_direction_difference_arcsec.toFixed(6)}
+          </div>
+          <div>秒角</div>
+        </div>
+
+        <div class="card">
+          <div>最大方向差</div>
+          <div class="value">
+            ${summary.maximum_direction_difference_arcsec.toFixed(6)}
+          </div>
+          <div>秒角</div>
+        </div>
+
+      </div>
+
+      <h2>比較結果一覧</h2>
+
+      <div class="table-wrap">
+        <table>
+
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>分</th>
+              <th>方向差（秒角）</th>
+              <th>距離差（AU）</th>
+              <th>ベクトル差（AU）</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows}
+          </tbody>
+
+        </table>
+      </div>
+
+      <h2>XYZベクトル詳細</h2>
+
+      ${vectorDetails}
+
+      <h2>JSON詳細データ</h2>
+
+      <pre id="json-output"></pre>
+
+    `;
+
+    document.getElementById("json-output").textContent =
+      JSON.stringify(output, null, 2);
+
+    console.log(output);
+  }
+
+  // ==========================================
+  // 12. エラー表示
+  // ==========================================
+
+  function showError(message) {
+
+    statusElement.className = "error";
+    statusElement.textContent = message;
+
+    outputElement.textContent = "";
+  }
+
+  // ==========================================
+  // 13. 実行
+  // ==========================================
+
+  try {
+    runTest();
+  } catch (error) {
+    showError(
+      "計算エラー: " + error.message
+    );
+
+    console.error(error);
+  }
+
+})();
+</script>
+
 </body>
 </html>
