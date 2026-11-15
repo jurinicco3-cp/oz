@@ -3,5 +3,9 @@
   "version": "未確定（masterからコピー）",
   "source": "https://github.com/cosinekitty/astronomy",
   "file": "astronomy.browser.min.js",
-  "modified_after_copy": false
+  "modified_after_copy": false,
+  "purpose": "天体位置の計算",
+  "coordinate_system": "geocentric_true_ecliptic_of_date",
+  "position_type": "apparent",
+  "notes": "JPL Horizonsとの比較検証を継続中。使用したmasterのコミットは未記録。"
 }
