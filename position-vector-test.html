@@ -12,6 +12,13 @@
 
   <script src="./astronomy/astronomy.browser.min.js"></script>
   <script>
+    console.log("Astronomy Engine:", window.Astronomy);
+    console.log(
+      "MakeTime:",
+      typeof window.Astronomy?.MakeTime
+    );
+  </script>
+  <script>
     const Astronomy = window.Astronomy;
 
     // JPL Horizons GEOMETRIC / ICRF / AU-D
