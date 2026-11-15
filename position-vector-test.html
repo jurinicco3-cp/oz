@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JPLベクトル比較テスト</title>
+  <title>JPL幾何学的ベクトル比較テスト</title>
 
   <style>
     body {
@@ -72,23 +72,24 @@
 
 <body>
 
-  <h1>JPLベクトル比較テスト</h1>
+  <h1>JPL幾何学的ベクトル比較テスト</h1>
 
   <p>
     Astronomy EngineとJPL Horizonsの
-    地心ベクトルを比較します。
+    地心幾何学的ベクトルを比較します。
   </p>
 
   <div class="note">
     <strong>検証条件</strong><br>
     JPL基準時刻：2026-11-14 03:00:00 TDB<br>
     座標系：JPL ICRF / Astronomy Engine EQJ<br>
-    JPL補正：Light-time corrected<br>
-    Astronomy Engine：光行時間補正あり<br>
-    光行差：あり・なしの両方を比較<br>
+    JPL補正：GEOMETRIC（補正なし）<br>
+    Astronomy Engine：HelioVector(海王星) - HelioVector(地球)<br>
+    光行時間補正：なし<br>
+    光行差：なし<br>
     <br>
-    ※ 現在は海王星のみ比較します。
-    土星の11月14日のJPLデータは未登録です。
+    ※ ICRFとEQJの座標系変換はまだ行いません。<br>
+    ※ UTCとTDBの時刻換算には約69.183403秒の差を使用します。
   </div>
 
   <button id="calculate">比較計算する</button>
@@ -103,7 +104,6 @@
         <tr>
           <th>天体</th>
           <th>時刻</th>
-          <th>光行差</th>
           <th>ΔX (AU)</th>
           <th>ΔY (AU)</th>
           <th>ΔZ (AU)</th>
@@ -113,7 +113,7 @@
       </thead>
       <tbody id="results">
         <tr>
-          <td colspan="8">まだ計算されていません。</td>
+          <td colspan="7">まだ計算されていません。</td>
         </tr>
       </tbody>
     </table>
@@ -132,13 +132,13 @@
     // ------------------------------------
 
     // JPLのTDB 03:00:00に対応するUTC時刻
-    // TDB - UTC 約69.183403秒
     const UTC_START = "2026-11-14T02:58:50.8166Z";
 
     const TDB_UTC_OFFSET_SECONDS = 69.183403;
 
     // ------------------------------------
     // 2. JPL基準データ
+    // GEOMETRIC cartesian states
     // 単位：AU
     // ------------------------------------
 
@@ -149,15 +149,15 @@
         epochs: [
           {
             tdb: "2026-11-14 03:00:00",
-            x: 29.21207601773921,
-            y: 0.9699358038075254,
-            z: -0.3627603644764938
+            x: 29.21204567131619,
+            y: 0.9704283284204748,
+            z: -0.3625580818067131
           },
           {
             tdb: "2026-11-14 03:01:00",
-            x: 29.21208542161302,
-            y: 0.9699310275947916,
-            z: -0.3627624806233108
+            x: 29.21205507508567,
+            y: 0.9704235523297892,
+            z: -0.3625601978747961
           }
         ]
       }
@@ -214,10 +214,10 @@
     }
 
     // ------------------------------------
-    // 5. Astronomy Engineの計算
+    // 5. 幾何学的な地心ベクトルを計算
     // ------------------------------------
 
-    function calculateAE(bodyName, date, aberration) {
+    function calculateGeometricGeocentric(bodyName, date) {
       const body = Astronomy.Body[bodyName];
 
       if (!body) {
@@ -228,17 +228,24 @@
 
       const time = Astronomy.MakeTime(date);
 
-      const vector = Astronomy.GeoVector(
+      // 海王星の太陽中心ベクトル
+      const planetHelio = Astronomy.HelioVector(
         body,
-        time,
-        aberration
+        time
       );
 
-      return {
-        x: vector.x,
-        y: vector.y,
-        z: vector.z
-      };
+      // 地球の太陽中心ベクトル
+      const earthHelio = Astronomy.HelioVector(
+        Astronomy.Body.Earth,
+        time
+      );
+
+      // 海王星 - 地球
+      // 同じ時刻の幾何学的な地心ベクトル
+      return subtractVectors(
+        planetHelio,
+        earthHelio
+      );
     }
 
     // ------------------------------------
@@ -293,7 +300,7 @@
       try {
         if (
           !window.Astronomy ||
-          !Astronomy.GeoVector ||
+          !Astronomy.HelioVector ||
           !Astronomy.MakeTime
         ) {
           throw new Error(
@@ -302,21 +309,26 @@
         }
 
         const output = {
-          test_name: "JPL vector comparison",
+          test_name: "JPL geometric vector comparison",
+
           jpl_epoch: "2026-11-14 03:00:00 TDB",
+
           utc_start: UTC_START,
 
           tdb_minus_utc_seconds:
             TDB_UTC_OFFSET_SECONDS,
 
           jpl_reference_frame: "ICRF",
+
           astronomy_engine_frame: "EQJ",
 
-          jpl_correction:
-            "light_time_corrected",
+          jpl_correction: "GEOMETRIC",
+
+          astronomy_engine_calculation:
+            "HelioVector(Neptune) - HelioVector(Earth)",
 
           astronomy_engine_correction:
-            "light_time_corrected",
+            "geometric_no_light_time_no_aberration",
 
           note:
             "ICRF and EQJ frame difference is not corrected in this test.",
@@ -329,6 +341,7 @@
 
           for (let i = 0; i < target.epochs.length; i++) {
             const reference = target.epochs[i];
+
             const date = getUtcDate(i);
 
             const jplVector = {
@@ -337,124 +350,75 @@
               z: reference.z
             };
 
-            // 光行差補正なし
-            const aeWithout = calculateAE(
-              target.body,
-              date,
-              false
-            );
+            // Astronomy Engineの幾何学的地心ベクトル
+            const aeVector =
+              calculateGeometricGeocentric(
+                target.body,
+                date
+              );
 
-            // 光行差補正あり
-            const aeWith = calculateAE(
-              target.body,
-              date,
-              true
-            );
-
-            const resultWithout =
-              compareVectors(jplVector, aeWithout);
-
-            const resultWith =
-              compareVectors(jplVector, aeWith);
+            // JPLとの比較
+            const comparison =
+              compareVectors(jplVector, aeVector);
 
             const item = {
               planet: key,
+
               name: target.name,
+
               tdb: reference.tdb,
+
               utc: date.toISOString(),
 
               jpl_vector_au: jplVector,
 
-              astronomy_engine_without_aberration:
-                aeWithout,
+              astronomy_engine_geometric_vector_au:
+                aeVector,
 
-              astronomy_engine_with_aberration:
-                aeWith,
-
-              comparison_without_aberration:
-                resultWithout,
-
-              comparison_with_aberration:
-                resultWith
+              comparison: comparison
             };
 
             output.results.push(item);
 
-            // 光行差なし
-            const rowWithout =
+            // 表に表示
+            const row =
               document.createElement("tr");
 
-            addCell(rowWithout, target.name);
-            addCell(rowWithout, reference.tdb);
-            addCell(rowWithout, "なし");
+            addCell(row, target.name);
+            addCell(row, reference.tdb);
 
             addCell(
-              rowWithout,
-              resultWithout.delta_x_au.toExponential(8)
+              row,
+              comparison.delta_x_au.toExponential(8)
             );
 
             addCell(
-              rowWithout,
-              resultWithout.delta_y_au.toExponential(8)
+              row,
+              comparison.delta_y_au.toExponential(8)
             );
 
             addCell(
-              rowWithout,
-              resultWithout.delta_z_au.toExponential(8)
+              row,
+              comparison.delta_z_au.toExponential(8)
             );
 
             addCell(
-              rowWithout,
-              resultWithout.direction_difference_arcsec.toFixed(5)
+              row,
+              comparison.direction_difference_arcsec.toFixed(5)
             );
 
             addCell(
-              rowWithout,
-              resultWithout.distance_difference_au.toExponential(8)
+              row,
+              comparison.distance_difference_au.toExponential(8)
             );
 
-            $("results").appendChild(rowWithout);
-
-            // 光行差あり
-            const rowWith =
-              document.createElement("tr");
-
-            addCell(rowWith, target.name);
-            addCell(rowWith, reference.tdb);
-            addCell(rowWith, "あり");
-
-            addCell(
-              rowWith,
-              resultWith.delta_x_au.toExponential(8)
-            );
-
-            addCell(
-              rowWith,
-              resultWith.delta_y_au.toExponential(8)
-            );
-
-            addCell(
-              rowWith,
-              resultWith.delta_z_au.toExponential(8)
-            );
-
-            addCell(
-              rowWith,
-              resultWith.direction_difference_arcsec.toFixed(5)
-            );
-
-            addCell(
-              rowWith,
-              resultWith.distance_difference_au.toExponential(8)
-            );
-
-            $("results").appendChild(rowWith);
+            $("results").appendChild(row);
           }
         }
 
         $("status").textContent =
           "比較計算が完了しました。\n" +
-          "海王星、2時点の比較を実施しました。";
+          "海王星、2時点の幾何学的ベクトルを比較しました。";
 
         $("status").className = "success";
 
