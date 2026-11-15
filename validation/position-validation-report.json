@@ -1,1 +1,134 @@
-
+{
+  "report_name": "Planet Position Validation Report",
+  "report_version": "1.0.0",
+  "validation_date": "2026-11-15",
+  "test_epoch": {
+    "date": "2026-06-14",
+    "time": "03:00:00",
+    "timezone": "UTC",
+    "iso8601": "2026-06-14T03:00:00Z"
+  },
+  "reference": {
+    "name": "NASA JPL Horizons",
+    "system": "Horizons On-Line Ephemeris System",
+    "observer": "Geocenter",
+    "center_body": "Earth (399)",
+    "ephemeris_type": "Observer Table",
+    "quantity": "Observer ecliptic longitude and latitude",
+    "reference_frame": "IAU76/80 ecliptic of date",
+    "position_type": "Apparent",
+    "corrections": {
+      "light_time": true,
+      "gravitational_deflection": true,
+      "stellar_aberration": true,
+      "refraction": false
+    }
+  },
+  "calculator": {
+    "name": "Astronomy Engine",
+    "method": "GeoVector(body, time, true) -> Ecliptic(vector)",
+    "position_type": "Apparent",
+    "corrections": {
+      "light_time": true,
+      "aberration": true
+    },
+    "output": "Geocentric ecliptic longitude",
+    "version": "Not pinned",
+    "source": "Official GitHub master branch"
+  },
+  "validation_criteria": {
+    "metric": "Absolute ecliptic longitude difference",
+    "unit": "arcseconds",
+    "target_max_difference": 60,
+    "latitude_validated": false
+  },
+  "results": [
+    {
+      "body": "Sun",
+      "jpl_target_id": 10,
+      "jpl_longitude_deg": 83.0982230,
+      "app_longitude_deg": 83.097861,
+      "difference_arcsec": 1.3032
+    },
+    {
+      "body": "Moon",
+      "jpl_target_id": 301,
+      "jpl_longitude_deg": 68.8091368,
+      "app_longitude_deg": 68.809845,
+      "difference_arcsec": 2.54952
+    },
+    {
+      "body": "Mercury",
+      "jpl_target_id": 199,
+      "jpl_longitude_deg": 107.5015588,
+      "app_longitude_deg": 107.501520,
+      "difference_arcsec": 0.13968
+    },
+    {
+      "body": "Venus",
+      "jpl_target_id": 299,
+      "jpl_longitude_deg": 120.7870509,
+      "app_longitude_deg": 120.786952,
+      "difference_arcsec": 0.35604
+    },
+    {
+      "body": "Mars",
+      "jpl_target_id": 499,
+      "jpl_longitude_deg": 49.4079749,
+      "app_longitude_deg": 49.407808,
+      "difference_arcsec": 0.60084
+    },
+    {
+      "body": "Jupiter",
+      "jpl_target_id": 599,
+      "jpl_longitude_deg": 116.6380875,
+      "app_longitude_deg": 116.637532,
+      "difference_arcsec": 1.9998
+    },
+    {
+      "body": "Saturn",
+      "jpl_target_id": 699,
+      "jpl_longitude_deg": 13.2468941,
+      "app_longitude_deg": 13.244484,
+      "difference_arcsec": 8.67636
+    },
+    {
+      "body": "Uranus",
+      "jpl_target_id": 799,
+      "jpl_longitude_deg": 62.8116108,
+      "app_longitude_deg": 62.811336,
+      "difference_arcsec": 0.98928
+    },
+    {
+      "body": "Neptune",
+      "jpl_target_id": 899,
+      "jpl_longitude_deg": 4.2699420,
+      "app_longitude_deg": 4.273169,
+      "difference_arcsec": 11.6172
+    }
+  ],
+  "summary": {
+    "bodies_tested": 9,
+    "bodies_within_target": 9,
+    "maximum_difference_arcsec": 11.6172,
+    "maximum_difference_body": "Neptune",
+    "all_bodies_within_60_arcsec": true,
+    "mean_difference_arcsec": 3.3591,
+    "status": "Passed for this single test epoch"
+  },
+  "limitations": [
+    "Only one date and time were tested.",
+    "Only ecliptic longitude was compared; ecliptic latitude has not been validated.",
+    "JPL Horizons and Astronomy Engine use different apparent-position correction models.",
+    "JPL includes gravitational deflection of light; the calculator may not apply an identical correction.",
+    "Astronomy Engine version and Git commit have not yet been pinned.",
+    "This result does not establish accuracy across all dates."
+  ],
+  "next_steps": [
+    "Pin the Astronomy Engine version and Git commit.",
+    "Validate ecliptic latitude.",
+    "Repeat longitude comparisons at additional dates.",
+    "Test positions near zodiac sign boundaries.",
+    "Preserve this report as a baseline for future regression tests."
+  ]
+}
