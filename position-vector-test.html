@@ -303,18 +303,22 @@ function calculate() {
 
       result.jpl_vector_ecl = jpl;
 
-      result.comparison = {
-        delta_ae_minus_jpl_au: delta,
+      esult.comparison = {
+  delta_x_au: delta.x,
+  delta_y_au: delta.y,
+  delta_z_au: delta.z,
 
-        direction_difference_arcsec:
-          directionDifferenceArcsec(ecl, jpl),
+  delta_ae_minus_jpl_au: delta,
 
-        distance_difference_au:
-          vectorLength(ecl) - vectorLength(jpl),
+  direction_difference_arcsec:
+    directionDifferenceArcsec(ecl, jpl),
 
-        vector_difference_au:
-          vectorLength(delta)
-      };
+  distance_difference_au:
+    vectorLength(ecl) - vectorLength(jpl),
+
+  vector_difference_au:
+    vectorLength(delta)
+};
 
     } else {
 
