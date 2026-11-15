@@ -4,8 +4,10 @@
   "source": "https://github.com/cosinekitty/astronomy",
   "file": "astronomy.browser.min.js",
   "modified_after_copy": false,
+  "sha256": "d1b3ab4b86aa409f78c0f0d95162a847496cba7e938eb6f4712cf9c1c45f4a2e",
+  "upstream_commit": "未確認",
   "purpose": "天体位置の計算",
   "coordinate_system": "geocentric_true_ecliptic_of_date",
   "position_type": "apparent",
-  "notes": "JPL Horizonsとの比較検証を継続中。使用したmasterのコミットは未記録。"
+  "notes": "ファイルのSHA-256を記録済み。コピー元のmasterコミットは未記録。JPL Horizonsとの比較検証を継続中。"
 }
