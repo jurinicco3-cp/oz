@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Earth JPL Vector Comparison</title>
+  <title>JPL Multi Planet Vector Comparison</title>
+
   <script src="astronomy/astronomy.browser.min.js"></script>
 
   <style>
@@ -19,72 +20,151 @@
     h1 { font-size: 21px; }
 
     button {
-      padding: 10px 18px;
+      padding: 11px 20px;
       font-size: 16px;
       cursor: pointer;
     }
 
     pre {
       background: white;
-      padding: 16px;
       border: 1px solid #ddd;
       border-radius: 6px;
+      padding: 16px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      font-size: 13px;
+    }
+
+    .note {
+      color: #555;
+      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
 
-<h1>Earth JPL Vector Comparison</h1>
+<h1>JPL Multi Planet Vector Comparison</h1>
 
 <p>
-  2026-12-14 03:00:00 TDBにおける地球の太陽中心ベクトルを比較します。
+  JPL HorizonsとAstronomy Engineの太陽中心ベクトルを
+  同じ条件で比較します。
 </p>
 
-<button onclick="runTest()">比較テストを実行</button>
+<p class="note">
+  日時：2026-12-14 03:00:00 TDB<br>
+  座標系：Ecliptic of J2000.0<br>
+  補正：GEOMETRIC
+</p>
 
-<h2>実行結果</h2>
-<pre id="output">ボタンを押してください。</pre>
+<button onclick="runTest()">一括比較を実行</button>
+
+<h2>比較結果</h2>
+<pre id="output">実行ボタンを押してください。</pre>
 
 <script>
 "use strict";
 
 // ========================================
-// 1. JPL Horizonsの基準データ
+// 1. 共通テスト条件
 // ========================================
 
-const test = {
+const TEST = {
   date: "2026-12-14",
-  tdb_days_since_j2000: 9843.625,
+  epochTDB: "2026-12-14 03:00:00",
+  tdbDays: 9843.625
+};
 
-  jpl: {
-    target: "Earth (399)",
-    center: "Sun (10)",
-    frame: "ICRF",
-    correction: "GEOMETRIC",
 
-    earth: {
-      x: 0.1413232111907993,
-      y: 0.893875912451149,
-      z: 0.3874756481013887
-    }
+// ========================================
+// 2. JPL Horizonsデータ
+//
+// 単位：AU
+// Center：Sun (10)
+// Correction：GEOMETRIC
+// Reference plane：Ecliptic of J2000.0
+//
+// null の天体は、JPLデータ取得後に入力する
+// ========================================
+
+const JPL_DATA = {
+
+  Mercury: {
+    x: null,
+    y: null,
+    z: null
+  },
+
+  Venus: {
+    x: null,
+    y: null,
+    z: null
+  },
+
+  Earth: {
+    x: 0.1413232111907993,
+    y: 0.893875912451149,
+    z: 0.3874756481013887
+  },
+
+  Mars: {
+    x: null,
+    y: null,
+    z: null
+  },
+
+  Jupiter: {
+    x: null,
+    y: null,
+    z: null
+  },
+
+  Saturn: {
+    x: null,
+    y: null,
+    z: null
+  },
+
+  Uranus: {
+    x: null,
+    y: null,
+    z: null
+  },
+
+  Neptune: {
+    x: 29.82397936270362,
+    y: 1.613720016140708,
+    z: -0.7205212703196399
+  },
+
+  Pluto: {
+    x: null,
+    y: null,
+    z: null
   }
 };
 
 
 // ========================================
-// 2. ベクトル計算
+// 3. Astronomy Engineの天体対応表
 // ========================================
 
-function subtractVectors(a, b) {
-  return {
-    x: a.x - b.x,
-    y: a.y - b.y,
-    z: a.z - b.z
-  };
-}
+const BODIES = [
+  { name: "Mercury", body: "Mercury" },
+  { name: "Venus", body: "Venus" },
+  { name: "Earth", body: "Earth" },
+  { name: "Mars", body: "Mars" },
+  { name: "Jupiter", body: "Jupiter" },
+  { name: "Saturn", body: "Saturn" },
+  { name: "Uranus", body: "Uranus" },
+  { name: "Neptune", body: "Neptune" },
+  { name: "Pluto", body: "Pluto" }
+];
+
+
+// ========================================
+// 4. ベクトル計算
+// ========================================
 
 function vectorLength(v) {
   return Math.sqrt(
@@ -92,6 +172,14 @@ function vectorLength(v) {
     v.y * v.y +
     v.z * v.z
   );
+}
+
+function subtractVectors(a, b) {
+  return {
+    x: a.x - b.x,
+    y: a.y - b.y,
+    z: a.z - b.z
+  };
 }
 
 function dotProduct(a, b) {
@@ -103,27 +191,49 @@ function dotProduct(a, b) {
 }
 
 function directionDifferenceArcsec(a, b) {
+
   const dot = dotProduct(a, b);
   const lenA = vectorLength(a);
   const lenB = vectorLength(b);
 
   let cosAngle = dot / (lenA * lenB);
-  cosAngle = Math.max(-1, Math.min(1, cosAngle));
 
-  const radians = Math.acos(cosAngle);
+  cosAngle = Math.max(
+    -1,
+    Math.min(1, cosAngle)
+  );
 
-  return radians * 180 / Math.PI * 3600;
+  const angle = Math.acos(cosAngle);
+
+  return angle * 180 / Math.PI * 3600;
 }
 
 
 // ========================================
-// 3. Astronomy Engineによる計算
+// 5. JPLデータの入力チェック
+// ========================================
+
+function hasJplVector(v) {
+
+  return (
+    v &&
+    Number.isFinite(v.x) &&
+    Number.isFinite(v.y) &&
+    Number.isFinite(v.z)
+  );
+}
+
+
+// ========================================
+// 6. メイン計算
 // ========================================
 
 function calculate() {
 
   if (typeof Astronomy === "undefined") {
-    throw new Error("Astronomy Engineが読み込まれていません。");
+    throw new Error(
+      "Astronomy Engineが読み込まれていません。"
+    );
   }
 
   if (
@@ -131,116 +241,174 @@ function calculate() {
     !== "function"
   ) {
     throw new Error(
-      "AstroTime.FromTerrestrialTime が見つかりません。"
+      "AstroTime.FromTerrestrialTimeが見つかりません。"
     );
   }
 
-  // JPLのTDB日数をTTとして直接指定
-  const time = Astronomy.AstroTime.FromTerrestrialTime(
-    test.tdb_days_since_j2000
-  );
-
-  // 時刻情報
-  const timeCheck = {
-    requested_tdb_days: test.tdb_days_since_j2000,
-    tt_days: time.tt,
-    ut_days: time.ut,
-    delta_t_seconds: (time.tt - time.ut) * 86400,
-    approximate_utc_from_engine: time.date.toISOString()
-  };
-
-  // 地球の太陽中心ベクトル
-  // Astronomy EngineのHelioVectorはEQJ座標
-  const earthEqj = Astronomy.HelioVector(
-    Astronomy.Body.Earth,
-    time
-  );
-
-  // JPLとの比較
-  const jplVector = test.jpl.earth;
-
-  const delta = subtractVectors(
-    earthEqj,
-    jplVector
-  );
-
-  const directionDifference =
-    directionDifferenceArcsec(
-      earthEqj,
-      jplVector
+  // JPLのTDBをTTとして直接指定
+  const time =
+    Astronomy.AstroTime.FromTerrestrialTime(
+      TEST.tdbDays
     );
 
-  const distanceDifference =
-    vectorLength(earthEqj) -
-    vectorLength(jplVector);
+  // EQJ → ECL
+  const rotation =
+    Astronomy.Rotation_EQJ_ECL();
 
-  const vectorDifference =
-    vectorLength(delta);
+  const results = [];
+
+  for (const item of BODIES) {
+
+    const body = Astronomy.Body[item.body];
+
+    if (body === undefined) {
+      throw new Error(
+        "天体が見つかりません: " + item.body
+      );
+    }
+
+    // Astronomy Engineの太陽中心ベクトル
+    const raw = Astronomy.HelioVector(
+      body,
+      time
+    );
+
+    // ECL座標に変換
+    const ecl = Astronomy.RotateVector(
+      rotation,
+      raw
+    );
+
+    const jpl = JPL_DATA[item.name];
+
+    const result = {
+      body: item.name,
+
+      astronomy_engine_eqj: {
+        x: raw.x,
+        y: raw.y,
+        z: raw.z
+      },
+
+      astronomy_engine_ecl: {
+        x: ecl.x,
+        y: ecl.y,
+        z: ecl.z
+      },
+
+      jpl_vector_available: hasJplVector(jpl)
+    };
+
+    // JPLデータがある天体だけ比較
+    if (hasJplVector(jpl)) {
+
+      const delta = subtractVectors(ecl, jpl);
+
+      result.jpl_vector_ecl = jpl;
+
+      result.comparison = {
+        delta_ae_minus_jpl_au: delta,
+
+        direction_difference_arcsec:
+          directionDifferenceArcsec(ecl, jpl),
+
+        distance_difference_au:
+          vectorLength(ecl) - vectorLength(jpl),
+
+        vector_difference_au:
+          vectorLength(delta)
+      };
+
+    } else {
+
+      result.message =
+        "JPLベクトル未入力。データ取得後に比較可能。";
+    }
+
+    results.push(result);
+  }
+
+  // 比較済み天体の集計
+  const compared = results.filter(
+    r => r.comparison
+  );
+
+  const errors = compared.map(
+    r => r.comparison.direction_difference_arcsec
+  );
+
+  const mean = errors.length
+    ? errors.reduce((a, b) => a + b, 0) / errors.length
+    : null;
+
+  const max = errors.length
+    ? Math.max(...errors)
+    : null;
+
+  const summary = {
+    total_bodies: results.length,
+    compared_bodies: compared.length,
+    waiting_for_jpl_data:
+      results.length - compared.length,
+
+    mean_direction_difference_arcsec: mean,
+    max_direction_difference_arcsec: max
+  };
 
   return {
-    test_name: "Earth JPL heliocentric vector comparison",
+    test_name:
+      "JPL and Astronomy Engine multi-body vector comparison",
 
-    date: test.date,
+    epoch_tdb: TEST.epochTDB,
 
-    epoch_tdb: "2026-12-14 03:00:00",
+    jpl_center: "Sun (10)",
 
-    jpl_target: test.jpl.target,
+    jpl_correction: "GEOMETRIC",
 
-    jpl_center: test.jpl.center,
+    jpl_reference_plane:
+      "Ecliptic of J2000.0",
 
-    jpl_frame: test.jpl.frame,
+    astronomy_engine_original_frame: "EQJ",
 
-    astronomy_engine_frame: "EQJ",
-
-    jpl_correction: test.jpl.correction,
+    astronomy_engine_converted_frame: "ECL",
 
     astronomy_engine_calculation:
-      "HelioVector(Earth)",
+      "HelioVector(body) -> Rotation_EQJ_ECL -> RotateVector",
 
     astronomy_engine_time_method:
       "AstroTime.FromTerrestrialTime",
 
-    time_check: timeCheck,
-
-    jpl_vector_au: jplVector,
-
-    astronomy_engine_vector_au: {
-      x: earthEqj.x,
-      y: earthEqj.y,
-      z: earthEqj.z
+    time_check: {
+      requested_tdb_days: TEST.tdbDays,
+      tt_days: time.tt,
+      ut_days: time.ut,
+      delta_t_seconds:
+        (time.tt - time.ut) * 86400
     },
 
-    comparison: {
-      delta_ae_minus_jpl_au: delta,
+    summary: summary,
 
-      direction_difference_arcsec:
-        directionDifference,
-
-      distance_difference_au:
-        distanceDifference,
-
-      vector_difference_au:
-        vectorDifference
-    },
+    results: results,
 
     note:
-      "JPL uses ICRF and Astronomy Engine uses EQJ. " +
-      "These frames are closely aligned but are not " +
-      "assumed to be exactly identical. " +
-      "JPL TDB is temporarily treated as TT."
+      "JPL TDB is temporarily treated as TT. " +
+      "Only bodies with entered JPL vectors are compared. " +
+      "ICRF and EQJ alignment is not explicitly corrected."
   };
 }
 
 
 // ========================================
-// 4. 実行
+// 7. 実行
 // ========================================
 
 function runTest() {
 
-  const output = document.getElementById("output");
+  const output =
+    document.getElementById("output");
 
   try {
+
     const result = calculate();
 
     output.textContent = JSON.stringify(
@@ -252,8 +420,10 @@ function runTest() {
     console.log(result);
 
   } catch (error) {
+
     output.textContent =
-      "エラーが発生しました。\n\n" + error.message;
+      "エラーが発生しました。\n\n" +
+      error.message;
 
     console.error(error);
   }
