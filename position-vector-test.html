@@ -1,9 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JPL / Astronomy Engine 2日間ベクトル比較</title>
+<title>JPL / Astronomy Engine Neptune Vector Comparison</title>
+
 <style>
   * { box-sizing: border-box; }
 
@@ -99,23 +101,24 @@
 
 <body>
 
-<h1>JPL / Astronomy Engine<br>2日間ベクトル比較</h1>
+<h1>JPL / Astronomy Engine<br>海王星ベクトル比較</h1>
 
 <p>
-  対象：海王星・地球<br>
-  日時：2026年11月14日 / 2026年12月14日<br>
-  JPL：GEOMETRIC / ICRF / AU-D<br>
-  Astronomy Engine：HelioVector / EQJ
+  対象：海王星<br>
+  中心：太陽<br>
+  日時：2026年12月14日 03:00 TDB<br>
+  JPL：GEOMETRIC / Ecliptic of J2000.0 / AU-D<br>
+  Astronomy Engine：HelioVector → EQJからECLへ変換
 </p>
 
 <div id="status" class="status">計算中...</div>
 
 <div class="note">
-  <strong>比較上の注意</strong><br>
-  JPLの座標系はICRF、Astronomy EngineのHelioVectorはEQJです。
-  このHTMLでは座標系の変換を行っていません。
-  したがって、表示される差には座標系の違いが含まれる可能性があります。<br><br>
-  また、TDBからUTCへの変換には約69.1834秒の近似値を使用しています。
+  <strong>比較条件</strong><br>
+  JPLの座標系はEcliptic of J2000.0です。<br>
+  Astronomy EngineのHelioVectorが返すEQJベクトルを
+  Rotation_EQJ_ECLでECL座標系に変換して比較します。<br><br>
+  TDBからUTCへの変換には約69.1834秒の近似値を使用しています。
   厳密な時刻変換ではありません。
 </div>
 
@@ -137,61 +140,29 @@
 
   // ----------------------------------------
   // JPL Horizons データ
-  // GEOMETRIC / ICRF / AU
-  // 各日の03:00:00 TDB
+  // Neptune / Sun center
+  // GEOMETRIC / Ecliptic of J2000.0 / AU
+  // 2026-12-14 03:00:00 TDB
   // ----------------------------------------
 
-  const testCases = [
-    {
-      date: "2026-11-14",
-      utc: "2026-11-14T02:58:50.8166Z",
+  const test = {
+    date: "2026-12-14",
+    utc: "2026-12-14T02:58:50.8166Z",
 
-      neptune: {
-        x: 29.82969625168707,
-        y: 1.679729941341890,
-        z: -0.05509235540241589
-      },
-
-      earth: {
-        x: 0.6176505802792127,
-        y: 0.7093016129697322,
-        z: 0.3074657264595009
-      },
-
-      geocentric: {
-        x: 29.21204567131619,
-        y: 0.9704283284204748,
-        z: -0.3625580818067131
-      }
-    },
-
-    {
-      date: "2026-12-14",
-      utc: "2026-12-14T02:58:50.8166Z",
-
-      neptune: {
-        x: 29.82397936270362,
-        y: 1.767166069707286,
-        z: -0.01916438236671672
-      },
-
-      earth: {
-        x: 0.1413232111907993,
-        y: 0.893875912451149,
-        z: 0.3874756481013887
-      },
-
-      geocentric: {
-        x: 29.68265615139564,
-        y: 0.8732901572584891,
-        z: -0.4066400304434343
-      }
+    neptune: {
+      x: 29.82397936270362,
+      y: 1.613720016140708,
+      z: -0.7205212703196399
     }
-  ];
+  };
 
   // ----------------------------------------
   // ベクトル計算
   // ----------------------------------------
+
+  function vectorLength(v) {
+    return Math.hypot(v.x, v.y, v.z);
+  }
 
   function subtractVectors(a, b) {
     return {
@@ -199,10 +170,6 @@
       y: a.y - b.y,
       z: a.z - b.z
     };
-  }
-
-  function vectorLength(v) {
-    return Math.hypot(v.x, v.y, v.z);
   }
 
   function dotProduct(a, b) {
@@ -217,7 +184,6 @@
     };
   }
 
-  // atan2を使い、小さい角度でも精度を保ちやすくする
   function angularDifferenceArcsec(a, b) {
     const cross = crossProduct(a, b);
     const crossLength = vectorLength(cross);
@@ -288,90 +254,70 @@
         </table>
 
         <div class="metrics">
+
           <div class="metric">
             <small>方向の差</small>
-            <strong>${result.direction_difference_arcsec.toFixed(6)}″</strong>
+            <strong>
+              ${result.direction_difference_arcsec.toFixed(6)}″
+            </strong>
           </div>
 
           <div class="metric">
             <small>距離の差</small>
-            <strong>${formatExp(result.distance_difference_au)}</strong>
+            <strong>
+              ${formatExp(result.distance_difference_au)}
+            </strong>
             <small>AU</small>
           </div>
 
           <div class="metric">
             <small>ベクトル差の大きさ</small>
-            <strong>${formatExp(result.vector_difference_au)}</strong>
+            <strong>
+              ${formatExp(result.vector_difference_au)}
+            </strong>
             <small>AU</small>
           </div>
+
         </div>
       </div>
     `;
   }
 
   // ----------------------------------------
-  // 各日付の計算
+  // 計算
   // ----------------------------------------
 
-  function calculateCase(test, Astronomy) {
+  function calculate(Astronomy) {
+
     const date = new Date(test.utc);
     const time = Astronomy.MakeTime(date);
 
-    // Astronomy Engineの太陽中心ベクトル
-    const neptuneRaw = Astronomy.HelioVector(
+    // 海王星の太陽中心ベクトルを取得
+    // Astronomy Engineの出力座標系はEQJ
+    const neptuneEqj = Astronomy.HelioVector(
       Astronomy.Body.Neptune,
       time
     );
 
-    const earthRaw = Astronomy.HelioVector(
-      Astronomy.Body.Earth,
-      time
+    // EQJ → J2000黄道座標系 ECL
+    const rotation = Astronomy.Rotation_EQJ_ECL();
+
+    const neptuneEcl = Astronomy.RotateVector(
+      rotation,
+      neptuneEqj
     );
 
+    // ECL座標系の値を取り出す
     const aeNeptune = {
-      x: neptuneRaw.x,
-      y: neptuneRaw.y,
-      z: neptuneRaw.z
+      x: neptuneEcl.x,
+      y: neptuneEcl.y,
+      z: neptuneEcl.z
     };
 
-    const aeEarth = {
-      x: earthRaw.x,
-      y: earthRaw.y,
-      z: earthRaw.z
-    };
-
-    // AE側の地球中心ベクトル
-    const aeGeocentric = subtractVectors(
-      aeNeptune,
-      aeEarth
-    );
-
-    // JPL側の地球中心ベクトルを個別ベクトルから計算
-    const jplGeocentricFromHelio = subtractVectors(
-      test.neptune,
-      test.earth
-    );
-
-    // 3種類の比較
-    const neptuneComparison = compareVectors(
+    // JPLと比較
+    const comparison = compareVectors(
       test.neptune,
       aeNeptune
-    );
-
-    const earthComparison = compareVectors(
-      test.earth,
-      aeEarth
-    );
-
-    const geocentricComparison = compareVectors(
-      test.geocentric,
-      aeGeocentric
-    );
-
-    // JPLの引き算と直接取得値の整合性
-    const jplSubtractionCheck = subtractVectors(
-      jplGeocentricFromHelio,
-      test.geocentric
     );
 
     return {
@@ -379,21 +325,19 @@
       tdb: test.date + " 03:00:00",
       utc_input: date.toISOString(),
 
-      neptune: neptuneComparison,
-      earth: earthComparison,
+      jpl_frame: "Ecliptic of J2000.0",
+      astronomy_engine_original_frame: "EQJ",
+      astronomy_engine_converted_frame: "ECL",
 
-      geocentric: {
-        jpl_vector_from_heliocentric_subtraction_au:
-          jplGeocentricFromHelio,
+      astronomy_engine_raw_eqj: {
+        x: neptuneEqj.x,
+        y: neptuneEqj.y,
+        z: neptuneEqj.z
+      },
 
-        jpl_direct_vector_au:
-          test.geocentric,
+      astronomy_engine_converted_ecl: aeNeptune,
 
-        jpl_subtraction_check_delta_au:
-          jplSubtractionCheck,
-
-        comparison: geocentricComparison
-      }
+      comparison: comparison
     };
   }
 
@@ -402,6 +346,7 @@
   // ----------------------------------------
 
   try {
+
     if (!window.Astronomy) {
       throw new Error(
         "Astronomy Engineが読み込まれていません。"
@@ -413,6 +358,8 @@
     if (
       typeof Astronomy.MakeTime !== "function" ||
       typeof Astronomy.HelioVector !== "function" ||
+      typeof Astronomy.Rotation_EQJ_ECL !== "function" ||
+      typeof Astronomy.RotateVector !== "function" ||
       !Astronomy.Body
     ) {
       throw new Error(
@@ -420,99 +367,73 @@
       );
     }
 
-    const allResults = testCases.map(test =>
-      calculateCase(test, Astronomy)
-    );
+    const result = calculate(Astronomy);
 
-    let html = "";
+    resultsElement.innerHTML = `
+      <h2>${result.date} の比較</h2>
 
-    allResults.forEach(result => {
-      html += `
-        <h2>${result.date} の比較</h2>
-        <p class="small">
-          TDB: ${result.tdb}<br>
-          AE入力UTC: ${result.utc_input}
-        </p>
-      `;
+      <p class="small">
+        TDB: ${result.tdb}<br>
+        AE入力UTC: ${result.utc_input}
+      </p>
 
-      html += comparisonHTML(
-        "1. 海王星の太陽中心ベクトル",
-        result.neptune
-      );
-
-      html += comparisonHTML(
-        "2. 地球の太陽中心ベクトル",
-        result.earth
-      );
-
-      html += comparisonHTML(
-        "3. 地球中心から見た海王星",
-        result.geocentric.comparison
-      );
-
-      html += `
-        <div class="note">
-          <strong>JPL引き算チェック</strong><br>
-          JPLの海王星ベクトル - 地球ベクトルと、
-          JPLから直接取得した地球中心ベクトルの差：
-          <pre>${JSON.stringify(
-            result.geocentric.jpl_subtraction_check_delta_au,
-            null,
-            2
-          )}</pre>
-        </div>
-      `;
-    });
-
-    resultsElement.innerHTML = html;
-
-    const summary = allResults.map(result => ({
-      date: result.date,
-
-      neptune_direction_difference_arcsec:
-        result.neptune.direction_difference_arcsec,
-
-      earth_direction_difference_arcsec:
-        result.earth.direction_difference_arcsec,
-
-      geocentric_direction_difference_arcsec:
-        result.geocentric.comparison.direction_difference_arcsec
-    }));
+      ${comparisonHTML(
+        "海王星の太陽中心ベクトル（J2000黄道座標系）",
+        result.comparison
+      )}
+    `;
 
     const output = {
       test_name:
-        "JPL and Astronomy Engine two-date vector comparison",
+        "JPL and Astronomy Engine Neptune ECL vector comparison",
 
-      jpl_frame: "ICRF",
-      astronomy_engine_frame: "EQJ",
+      epoch_tdb: result.tdb,
+
+      jpl_frame:
+        "Ecliptic of J2000.0",
+
+      astronomy_engine_original_frame:
+        "EQJ",
+
+      astronomy_engine_converted_frame:
+        "ECL",
 
       jpl_correction:
         "GEOMETRIC",
 
       astronomy_engine_calculation:
-        "HelioVector(Neptune) and HelioVector(Earth)",
+        "HelioVector(Neptune) -> Rotation_EQJ_ECL -> RotateVector",
 
-      astronomy_engine_correction:
-        "geometric heliocentric vectors; no light-time or aberration",
+      utc_input:
+        result.utc_input,
+
+      astronomy_engine_raw_eqj:
+        result.astronomy_engine_raw_eqj,
+
+      astronomy_engine_converted_ecl:
+        result.astronomy_engine_converted_ecl,
+
+      comparison:
+        result.comparison,
 
       note:
-        "ICRF and EQJ frame difference is not corrected. UTC conversion uses approximate TDB-UTC offset.",
-
-      summary: summary,
-      results: allResults
+        "TDB to UTC conversion uses an approximate offset. Verify the installed Astronomy Engine API and time conversion before interpreting small residuals."
     };
 
     jsonElement.textContent =
       JSON.stringify(output, null, 2);
 
     status.textContent =
-      "計算完了！2日分・6種類の比較が完了しました。";
+      "計算完了！海王星のベクトル比較が完了しました。";
 
   } catch (error) {
+
     status.className = "status error";
     status.textContent = "エラー：" + error.message;
+
     jsonElement.textContent =
       error.stack || error.message;
+
   }
 
 })();
