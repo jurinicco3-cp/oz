@@ -1,13 +1,13 @@
 {
   "library": "Astronomy Engine",
-  "version": "未確定（masterからコピー）",
+  "version": "2025-01-28",
   "source": "https://github.com/cosinekitty/astronomy",
   "file": "astronomy.browser.min.js",
   "modified_after_copy": false,
   "sha256": "d1b3ab4b86aa409f78c0f0d95162a847496cba7e938eb6f4712cf9c1c45f4a2e",
-  "upstream_commit": "未確認",
+  "upstream_commit": "826e26ff3a6dc03ee46658b1138fef582d96c5d9",
   "purpose": "天体位置の計算",
   "coordinate_system": "geocentric_true_ecliptic_of_date",
   "position_type": "apparent",
-  "notes": "ファイルのSHA-256を記録済み。コピー元のmasterコミットは未記録。JPL Horizonsとの比較検証を継続中。"
+  "notes": "2025-01-28の公式コミットに含まれるastronomy.browser.min.jsとSHA-256が完全一致。ファイル内容の同一性を確認済み。"
 }
