@@ -1,128 +1,197 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JPL / Astronomy Engine ベクトル比較</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      max-width: 1100px;
-      margin: 30px auto;
-      padding: 0 16px;
-      color: #222;
-      line-height: 1.6;
-    }
-    h1 { font-size: 24px; }
-    h2 { margin-top: 32px; font-size: 19px; }
-    .note {
-      background: #f3f5f7;
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin: 16px 0;
-    }
-    .status {
-      padding: 12px;
-      border-radius: 8px;
-      background: #eaf6ed;
-      margin: 16px 0;
-    }
-    .error { background: #fdecec; color: #9b2020; }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 12px 0 24px;
-      font-size: 14px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 9px;
-      text-align: right;
-      overflow-wrap: anywhere;
-    }
-    th { background: #f3f5f7; }
-    th:first-child, td:first-child { text-align: left; }
-    pre {
-      background: #f6f6f6;
-      padding: 14px;
-      border-radius: 8px;
-      overflow-x: auto;
-      font-size: 12px;
-    }
-    .metric {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 14px;
-      margin: 8px 0;
-    }
-    .metric strong { font-size: 20px; }
-    .small { color: #666; font-size: 13px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JPL / Astronomy Engine 2日間ベクトル比較</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 1150px;
+    margin: 30px auto;
+    padding: 0 16px 50px;
+    color: #222;
+    line-height: 1.6;
+  }
+
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; margin-top: 36px; }
+  h3 { font-size: 17px; margin-top: 24px; }
+
+  .note, .status {
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    background: #f1f4f8;
+  }
+
+  .status { background: #eaf6ed; }
+  .error { background: #fdecec; color: #a11; }
+
+  .section {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 18px 0;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+
+  .metric {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 0;
+  }
+
+  .metric strong {
+    display: block;
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .metric small { color: #666; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 9px;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  th { background: #f1f3f5; }
+  th:first-child, td:first-child { text-align: left; }
+
+  pre {
+    background: #f5f5f5;
+    padding: 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .small { color: #666; font-size: 13px; }
+
+  @media (max-width: 600px) {
+    body { padding: 0 10px 30px; }
+    .section { padding: 10px; }
+    table { font-size: 11px; }
+    th, td { padding: 6px 4px; }
+  }
+</style>
 </head>
+
 <body>
 
-<h1>JPL / Astronomy Engine ベクトル比較</h1>
+<h1>JPL / Astronomy Engine<br>2日間ベクトル比較</h1>
 
 <p>
-  対象：2026年12月14日 03:00:00 TDB<br>
-  比較：太陽中心の海王星・地球ベクトル、および地球中心の海王星ベクトル
+  対象：海王星・地球<br>
+  日時：2026年11月14日 / 2026年12月14日<br>
+  JPL：GEOMETRIC / ICRF / AU-D<br>
+  Astronomy Engine：HelioVector / EQJ
 </p>
 
 <div id="status" class="status">計算中...</div>
 
 <div class="note">
-  <strong>注意：</strong>
-  Astronomy EngineのHelioVectorはEQJ座標系、
-  JPLの今回のデータはICRF座標系です。
-  座標系の変換はまだ行っていないため、差には座標系の違いも含まれる可能性があります。
-  また、TDBからUTCへの変換には近似値を使用しています。
+  <strong>比較上の注意</strong><br>
+  JPLの座標系はICRF、Astronomy EngineのHelioVectorはEQJです。
+  このHTMLでは座標系の変換を行っていません。
+  したがって、表示される差には座標系の違いが含まれる可能性があります。<br><br>
+  また、TDBからUTCへの変換には約69.1834秒の近似値を使用しています。
+  厳密な時刻変換ではありません。
 </div>
 
-<h2>1. 海王星の太陽中心ベクトル</h2>
-<div id="neptune"></div>
+<div id="results"></div>
 
-<h2>2. 地球の太陽中心ベクトル</h2>
-<div id="earth"></div>
-
-<h2>3. 地球中心から見た海王星</h2>
-<div id="geocentric"></div>
-
-<h2>4. JSONデータ</h2>
-<pre id="json"></pre>
+<h2>全データ JSON</h2>
+<p class="small">結果をコピーして比較・保存するためのデータです。</p>
+<pre id="json">計算中...</pre>
 
 <script src="astronomy/astronomy.browser.min.js"></script>
+
 <script>
 (function () {
   "use strict";
 
   const status = document.getElementById("status");
+  const resultsElement = document.getElementById("results");
+  const jsonElement = document.getElementById("json");
 
-  // JPL Horizons：2026-12-14 03:00:00 TDB
-  // 太陽中心・GEOMETRIC・ICRF・AU
+  // ----------------------------------------
+  // JPL Horizons データ
+  // GEOMETRIC / ICRF / AU
+  // 各日の03:00:00 TDB
+  // ----------------------------------------
 
-  const jplNeptune = {
-    x: 2.982397936270362E+01,
-    y: 1.767166069707286E+00,
-    z: -1.916438236671672E-02
-  };
+  const testCases = [
+    {
+      date: "2026-11-14",
+      utc: "2026-11-14T02:58:50.8166Z",
 
-  const jplEarth = {
-    x: 1.413232111907993E-01,
-    y: 8.938759124511489E-01,
-    z: 3.874756481013887E-01
-  };
+      neptune: {
+        x: 29.82969625168707,
+        y: 1.679729941341890,
+        z: -0.05509235540241589
+      },
 
-  // JPL Horizons：地球中心から見た海王星
-  // GEOMETRIC・ICRF・AU
-  const jplGeocentric = {
-    x: 29.68265615139564,
-    y: 0.8732901572584891,
-    z: -0.4066400304434343
-  };
+      earth: {
+        x: 0.6176505802792127,
+        y: 0.7093016129697322,
+        z: 0.3074657264595009
+      },
 
-  // 2026-12-14 03:00:00 TDB に対応するUTCの近似値
-  const utcDate = new Date("2026-12-14T02:58:50.8166Z");
+      geocentric: {
+        x: 29.21204567131619,
+        y: 0.9704283284204748,
+        z: -0.3625580818067131
+      }
+    },
+
+    {
+      date: "2026-12-14",
+      utc: "2026-12-14T02:58:50.8166Z",
+
+      neptune: {
+        x: 29.82397936270362,
+        y: 1.767166069707286,
+        z: -0.01916438236671672
+      },
+
+      earth: {
+        x: 0.1413232111907993,
+        y: 0.893875912451149,
+        z: 0.3874756481013887
+      },
+
+      geocentric: {
+        x: 29.68265615139564,
+        y: 0.8732901572584891,
+        z: -0.4066400304434343
+      }
+    }
+  ];
+
+  // ----------------------------------------
+  // ベクトル計算
+  // ----------------------------------------
 
   function subtractVectors(a, b) {
     return {
@@ -133,18 +202,30 @@
   }
 
   function vectorLength(v) {
-    return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    return Math.hypot(v.x, v.y, v.z);
   }
 
+  function dotProduct(a, b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+  }
+
+  function crossProduct(a, b) {
+    return {
+      x: a.y * b.z - a.z * b.y,
+      y: a.z * b.x - a.x * b.z,
+      z: a.x * b.y - a.y * b.x
+    };
+  }
+
+  // atan2を使い、小さい角度でも精度を保ちやすくする
   function angularDifferenceArcsec(a, b) {
-    const dot = a.x * b.x + a.y * b.y + a.z * b.z;
-    const denominator = vectorLength(a) * vectorLength(b);
+    const cross = crossProduct(a, b);
+    const crossLength = vectorLength(cross);
+    const dot = dotProduct(a, b);
 
-    let cosine = dot / denominator;
-    cosine = Math.max(-1, Math.min(1, cosine));
+    const radians = Math.atan2(crossLength, dot);
 
-    const radians = Math.acos(cosine);
-    return radians * (180 / Math.PI) * 3600;
+    return radians * 180 / Math.PI * 3600;
   }
 
   function compareVectors(jpl, ae) {
@@ -154,159 +235,286 @@
       jpl_vector_au: jpl,
       astronomy_engine_vector_au: ae,
       delta_ae_minus_jpl_au: delta,
+
       direction_difference_arcsec:
         angularDifferenceArcsec(jpl, ae),
+
       distance_difference_au:
         vectorLength(ae) - vectorLength(jpl),
+
       vector_difference_au:
         vectorLength(delta)
     };
   }
 
-  function formatNumber(value) {
+  function format(value) {
     return Number(value).toFixed(12);
   }
 
-  function vectorTable(result) {
-    const rows = ["x", "y", "z"].map(axis => `
+  function formatExp(value) {
+    return Number(value).toExponential(8);
+  }
+
+  // ----------------------------------------
+  // 比較結果のHTML表示
+  // ----------------------------------------
+
+  function comparisonHTML(title, result) {
+    const axes = ["x", "y", "z"];
+
+    const rows = axes.map(axis => `
       <tr>
         <td>${axis.toUpperCase()}</td>
-        <td>${formatNumber(result.jpl_vector_au[axis])}</td>
-        <td>${formatNumber(result.astronomy_engine_vector_au[axis])}</td>
-        <td>${formatNumber(result.delta_ae_minus_jpl_au[axis])}</td>
+        <td>${format(result.jpl_vector_au[axis])}</td>
+        <td>${format(result.astronomy_engine_vector_au[axis])}</td>
+        <td>${format(result.delta_ae_minus_jpl_au[axis])}</td>
       </tr>
     `).join("");
 
     return `
-      <table>
-        <thead>
-          <tr>
-            <th>成分</th>
-            <th>JPL (AU)</th>
-            <th>Astronomy Engine (AU)</th>
-            <th>AE - JPL (AU)</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="metric">
-        方向の差<br>
-        <strong>${result.direction_difference_arcsec.toFixed(6)} 秒角</strong>
-      </div>
-      <div class="metric">
-        距離の差<br>
-        <strong>${result.distance_difference_au.toExponential(8)} AU</strong>
-      </div>
-      <div class="metric">
-        ベクトル差の大きさ<br>
-        <strong>${result.vector_difference_au.toExponential(8)} AU</strong>
+      <div class="section">
+        <h3>${title}</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>成分</th>
+              <th>JPL (AU)</th>
+              <th>Astronomy Engine (AU)</th>
+              <th>AE - JPL (AU)</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <div class="metrics">
+          <div class="metric">
+            <small>方向の差</small>
+            <strong>${result.direction_difference_arcsec.toFixed(6)}″</strong>
+          </div>
+
+          <div class="metric">
+            <small>距離の差</small>
+            <strong>${formatExp(result.distance_difference_au)}</strong>
+            <small>AU</small>
+          </div>
+
+          <div class="metric">
+            <small>ベクトル差の大きさ</small>
+            <strong>${formatExp(result.vector_difference_au)}</strong>
+            <small>AU</small>
+          </div>
+        </div>
       </div>
     `;
   }
 
+  // ----------------------------------------
+  // 各日付の計算
+  // ----------------------------------------
+
+  function calculateCase(test, Astronomy) {
+    const date = new Date(test.utc);
+    const time = Astronomy.MakeTime(date);
+
+    // Astronomy Engineの太陽中心ベクトル
+    const neptuneRaw = Astronomy.HelioVector(
+      Astronomy.Body.Neptune,
+      time
+    );
+
+    const earthRaw = Astronomy.HelioVector(
+      Astronomy.Body.Earth,
+      time
+    );
+
+    const aeNeptune = {
+      x: neptuneRaw.x,
+      y: neptuneRaw.y,
+      z: neptuneRaw.z
+    };
+
+    const aeEarth = {
+      x: earthRaw.x,
+      y: earthRaw.y,
+      z: earthRaw.z
+    };
+
+    // AE側の地球中心ベクトル
+    const aeGeocentric = subtractVectors(
+      aeNeptune,
+      aeEarth
+    );
+
+    // JPL側の地球中心ベクトルを個別ベクトルから計算
+    const jplGeocentricFromHelio = subtractVectors(
+      test.neptune,
+      test.earth
+    );
+
+    // 3種類の比較
+    const neptuneComparison = compareVectors(
+      test.neptune,
+      aeNeptune
+    );
+
+    const earthComparison = compareVectors(
+      test.earth,
+      aeEarth
+    );
+
+    const geocentricComparison = compareVectors(
+      test.geocentric,
+      aeGeocentric
+    );
+
+    // JPLの引き算と直接取得値の整合性
+    const jplSubtractionCheck = subtractVectors(
+      jplGeocentricFromHelio,
+      test.geocentric
+    );
+
+    return {
+      date: test.date,
+      tdb: test.date + " 03:00:00",
+      utc_input: date.toISOString(),
+
+      neptune: neptuneComparison,
+      earth: earthComparison,
+
+      geocentric: {
+        jpl_vector_from_heliocentric_subtraction_au:
+          jplGeocentricFromHelio,
+
+        jpl_direct_vector_au:
+          test.geocentric,
+
+        jpl_subtraction_check_delta_au:
+          jplSubtractionCheck,
+
+        comparison: geocentricComparison
+      }
+    };
+  }
+
+  // ----------------------------------------
+  // 実行
+  // ----------------------------------------
+
   try {
     if (!window.Astronomy) {
-      throw new Error("Astronomy Engineが読み込まれていません。");
+      throw new Error(
+        "Astronomy Engineが読み込まれていません。"
+      );
     }
 
     const Astronomy = window.Astronomy;
 
     if (
       typeof Astronomy.MakeTime !== "function" ||
-      typeof Astronomy.HelioVector !== "function"
+      typeof Astronomy.HelioVector !== "function" ||
+      !Astronomy.Body
     ) {
-      throw new Error("必要なAstronomy Engine APIが見つかりません。");
+      throw new Error(
+        "Astronomy Engineの必要なAPIが見つかりません。"
+      );
     }
 
-    const time = Astronomy.MakeTime(utcDate);
-
-    // 太陽中心ベクトルを個別に取得
-    const aeNeptuneRaw = Astronomy.HelioVector(
-      Astronomy.Body.Neptune,
-      time
+    const allResults = testCases.map(test =>
+      calculateCase(test, Astronomy)
     );
 
-    const aeEarthRaw = Astronomy.HelioVector(
-      Astronomy.Body.Earth,
-      time
-    );
+    let html = "";
 
-    const aeNeptune = {
-      x: aeNeptuneRaw.x,
-      y: aeNeptuneRaw.y,
-      z: aeNeptuneRaw.z
-    };
+    allResults.forEach(result => {
+      html += `
+        <h2>${result.date} の比較</h2>
+        <p class="small">
+          TDB: ${result.tdb}<br>
+          AE入力UTC: ${result.utc_input}
+        </p>
+      `;
 
-    const aeEarth = {
-      x: aeEarthRaw.x,
-      y: aeEarthRaw.y,
-      z: aeEarthRaw.z
-    };
+      html += comparisonHTML(
+        "1. 海王星の太陽中心ベクトル",
+        result.neptune
+      );
 
-    // Astronomy Engine側の地球中心・海王星ベクトル
-    const aeGeocentric = subtractVectors(aeNeptune, aeEarth);
+      html += comparisonHTML(
+        "2. 地球の太陽中心ベクトル",
+        result.earth
+      );
 
-    // JPL側の地球中心・海王星ベクトル
-    const jplGeocentricFromHelio =
-      subtractVectors(jplNeptune, jplEarth);
+      html += comparisonHTML(
+        "3. 地球中心から見た海王星",
+        result.geocentric.comparison
+      );
 
-    // 個別比較
-    const neptuneComparison =
-      compareVectors(jplNeptune, aeNeptune);
+      html += `
+        <div class="note">
+          <strong>JPL引き算チェック</strong><br>
+          JPLの海王星ベクトル - 地球ベクトルと、
+          JPLから直接取得した地球中心ベクトルの差：
+          <pre>${JSON.stringify(
+            result.geocentric.jpl_subtraction_check_delta_au,
+            null,
+            2
+          )}</pre>
+        </div>
+      `;
+    });
 
-    const earthComparison =
-      compareVectors(jplEarth, aeEarth);
+    resultsElement.innerHTML = html;
 
-    // 地球中心ベクトル比較
-    const geocentricComparison =
-      compareVectors(jplGeocentric, aeGeocentric);
+    const summary = allResults.map(result => ({
+      date: result.date,
 
-    // JPLの個別ベクトルを引いた結果と、
-    // JPLの直接取得値との整合性確認
-    const jplSubtractionCheck = subtractVectors(
-      jplGeocentricFromHelio,
-      jplGeocentric
-    );
+      neptune_direction_difference_arcsec:
+        result.neptune.direction_difference_arcsec,
 
-    document.getElementById("neptune").innerHTML =
-      vectorTable(neptuneComparison);
+      earth_direction_difference_arcsec:
+        result.earth.direction_difference_arcsec,
 
-    document.getElementById("earth").innerHTML =
-      vectorTable(earthComparison);
-
-    document.getElementById("geocentric").innerHTML =
-      vectorTable(geocentricComparison);
+      geocentric_direction_difference_arcsec:
+        result.geocentric.comparison.direction_difference_arcsec
+    }));
 
     const output = {
-      test_name: "JPL and Astronomy Engine heliocentric vector comparison",
-      epoch_tdb: "2026-12-14 03:00:00",
-      astronomy_engine_utc_input: utcDate.toISOString(),
+      test_name:
+        "JPL and Astronomy Engine two-date vector comparison",
+
       jpl_frame: "ICRF",
       astronomy_engine_frame: "EQJ",
-      correction: "GEOMETRIC / no light-time / no aberration",
-      note: "ICRF and EQJ frame difference is not corrected. UTC conversion uses approximate TDB-UTC offset.",
-      neptune: neptuneComparison,
-      earth: earthComparison,
-      geocentric: {
-        jpl_vector_from_heliocentric_subtraction_au:
-          jplGeocentricFromHelio,
-        jpl_direct_vector_au: jplGeocentric,
-        jpl_subtraction_check_delta_au: jplSubtractionCheck,
-        comparison: geocentricComparison
-      }
+
+      jpl_correction:
+        "GEOMETRIC",
+
+      astronomy_engine_calculation:
+        "HelioVector(Neptune) and HelioVector(Earth)",
+
+      astronomy_engine_correction:
+        "geometric heliocentric vectors; no light-time or aberration",
+
+      note:
+        "ICRF and EQJ frame difference is not corrected. UTC conversion uses approximate TDB-UTC offset.",
+
+      summary: summary,
+      results: allResults
     };
 
-    document.getElementById("json").textContent =
+    jsonElement.textContent =
       JSON.stringify(output, null, 2);
 
-    status.textContent = "計算完了！すべての比較データを取得できました。";
+    status.textContent =
+      "計算完了！2日分・6種類の比較が完了しました。";
 
   } catch (error) {
     status.className = "status error";
     status.textContent = "エラー：" + error.message;
-    document.getElementById("json").textContent =
+    jsonElement.textContent =
       error.stack || error.message;
   }
+
 })();
 </script>
 
