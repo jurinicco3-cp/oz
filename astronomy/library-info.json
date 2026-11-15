@@ -1,1 +1,7 @@
-
+{
+  "library": "Astronomy Engine",
+  "version": "未確定（masterからコピー）",
+  "source": "https://github.com/cosinekitty/astronomy",
+  "file": "astronomy.browser.min.js",
+  "modified_after_copy": false
+}
