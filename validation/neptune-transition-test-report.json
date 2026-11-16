@@ -1,1 +1,57 @@
 
+{
+  "report_name": "Neptune Sign Transition Test",
+  "report_version": "1.0.0",
+  "test_date": "2026-11-16",
+  "planet": "neptune",
+  "zodiac_system": "tropical",
+  "coordinate_system": "geocentric_true_ecliptic_of_date",
+  "search_period_days": 5200,
+  "transition": {
+    "from_sign": "aries",
+    "to_sign": "taurus",
+    "boundary_longitude_deg": 30,
+    "transition_time_utc": "2038-05-21T23:49:09.739Z",
+    "transition_time_jst": "2038-05-22 08:49:09.739",
+    "search_resolution_ms": 1
+  },
+  "test_results": [
+    {
+      "label": "直前",
+      "time_utc": "2038-05-21T23:49:09.738Z",
+      "expected_sign": "aries",
+      "actual_sign": "aries",
+      "displayed_longitude_deg": 30,
+      "passed": true
+    },
+    {
+      "label": "境界到達後",
+      "time_utc": "2038-05-21T23:49:09.739Z",
+      "expected_sign": "taurus",
+      "actual_sign": "taurus",
+      "displayed_longitude_deg": 30,
+      "passed": true
+    },
+    {
+      "label": "直後",
+      "time_utc": "2038-05-21T23:49:09.740Z",
+      "expected_sign": "taurus",
+      "actual_sign": "taurus",
+      "displayed_longitude_deg": 30,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "status": "ALL PASS"
+  },
+  "limitations": [
+    "黄経はコンソール表示上、小数点以下が丸められているため、記録値30度は表示値である。",
+    "1ミリ秒の探索間隔は数値上の境界区間を示すものであり、物理的な時刻精度を保証するものではない。",
+    "このテストは海王星の牡羊座から牡牛座への移動1例を確認したものであり、逆行による境界の再通過は別途検証が必要。",
+    "JPLによる独立した移動時刻の照合は未実施。"
+  ]
+}
+
