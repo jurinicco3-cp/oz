@@ -132,3 +132,28 @@
     "Preserve this report as a baseline for future regression tests."
   ]
 }
+
+{
+  "test_date": "2026-11-14T03:00:00Z",
+  "reference": "JPL Horizons",
+  "library": "Astronomy Engine",
+  "coordinate_system": "geocentric_ecliptic_of_date",
+  "comparison": "ecliptic_longitude",
+  "tolerance_arcsec": 60,
+  "body_count": 9,
+  "passed": 9,
+  "failed": 0,
+  "max_error_arcsec": 12.1626,
+  "mean_absolute_error_arcsec": 4.456,
+  "results": [
+    {"body":"sun","jpl_lon":231.7494506,"app_lon":231.749318,"error_arcsec":0.47736,"sign":"scorpio","degree_in_sign":21.749318,"passed":true},
+    {"body":"moon","jpl_lon":285.0494989,"app_lon":285.050188,"error_arcsec":2.48076,"sign":"capricorn","degree_in_sign":15.050188,"passed":true},
+    {"body":"mercury","jpl_lon":215.0532467,"app_lon":215.053765,"error_arcsec":1.86588,"sign":"scorpio","degree_in_sign":5.053765,"passed":true},
+    {"body":"venus","jpl_lon":202.8638734,"app_lon":202.861068,"error_arcsec":10.09944,"sign":"libra","degree_in_sign":22.861068,"passed":true},
+    {"body":"mars","jpl_lon":144.9250974,"app_lon":144.925016,"error_arcsec":0.29304,"sign":"leo","degree_in_sign":24.925016,"passed":true},
+    {"body":"jupiter","jpl_lon":145.7062828,"app_lon":145.705764,"error_arcsec":1.86768,"sign":"leo","degree_in_sign":25.705764,"passed":true},
+    {"body":"saturn","jpl_lon":8.5668489,"app_lon":8.564012,"error_arcsec":10.21284,"sign":"aries","degree_in_sign":8.564012,"passed":true},
+    {"body":"uranus","jpl_lon":64.1668979,"app_lon":64.166719,"error_arcsec":0.64404,"sign":"gemini","degree_in_sign":4.166719,"passed":true},
+    {"body":"neptune","jpl_lon":1.8434385,"app_lon":1.846817,"error_arcsec":12.1626,"sign":"aries","degree_in_sign":1.846817,"passed":true}
+  ]
+}
