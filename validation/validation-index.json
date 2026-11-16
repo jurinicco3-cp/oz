@@ -1,1 +1,77 @@
-
+{
+  "index_name": "Astronomy Position Validation Index",
+  "index_version": "1.0.0",
+  "created_date": "2026-11-16",
+  "description": "天体位置計算エンジンの検証レポート一覧",
+  "library": {
+    "name": "Astronomy Engine",
+    "version": "2025-01-28"
+  },
+  "reports": [
+    {
+      "file": "position-validation-report.json",
+      "category": "天体位置の比較検証",
+      "status": "saved"
+    },
+    {
+      "file": "zodiac-boundary-test-report.json",
+      "category": "12星座の境界判定",
+      "status": "saved"
+    },
+    {
+      "file": "sign-transition-test-report.json",
+      "category": "太陽の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "moon-transition-test-report.json",
+      "category": "月の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "mercury-transition-test-report.json",
+      "category": "水星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "venus-transition-test-report.json",
+      "category": "金星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "mars-transition-test-report.json",
+      "category": "火星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "jupiter-transition-test-report.json",
+      "category": "木星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "saturn-transition-test-report.json",
+      "category": "土星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "uranus-transition-test-report.json",
+      "category": "天王星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "neptune-transition-test-report.json",
+      "category": "海王星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "pluto-transition-test-report.json",
+      "category": "冥王星の星座移動",
+      "status": "saved"
+    }
+  ],
+  "notes": [
+    "statusはファイルの存在を確認したことを示し、検証内容の完全性を保証するものではない。",
+    "星座移動テストは選択した移動事例の確認であり、逆行による再通過を含む全移動の網羅検証ではない。",
+    "天体位置の比較結果はJPLとの比較差であり、計算誤差そのものを直接示すものではない。"
+  ]
+}
