@@ -1,1 +1,55 @@
 
+{
+  "report_name": "Mercury Sign Transition Test",
+  "report_version": "1.0.0",
+  "test_date": "2026-11-16",
+  "planet": "mercury",
+  "zodiac_system": "tropical",
+  "coordinate_system": "geocentric_true_ecliptic_of_date",
+  "transition": {
+    "from_sign": "scorpio",
+    "to_sign": "sagittarius",
+    "boundary_longitude_deg": 240,
+    "transition_time_utc": "2026-12-06T08:33:52.099Z",
+    "transition_time_jst": "2026-12-06 17:33:52.099",
+    "search_resolution_ms": 1
+  },
+  "test_results": [
+    {
+      "label": "直前",
+      "time_utc": "2026-12-06T08:33:52.098Z",
+      "expected_sign": "scorpio",
+      "actual_sign": "scorpio",
+      "displayed_longitude_deg": 240,
+      "passed": true
+    },
+    {
+      "label": "境界到達後",
+      "time_utc": "2026-12-06T08:33:52.099Z",
+      "expected_sign": "sagittarius",
+      "actual_sign": "sagittarius",
+      "displayed_longitude_deg": 240,
+      "passed": true
+    },
+    {
+      "label": "直後",
+      "time_utc": "2026-12-06T08:33:52.100Z",
+      "expected_sign": "sagittarius",
+      "actual_sign": "sagittarius",
+      "displayed_longitude_deg": 240,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "status": "ALL PASS"
+  },
+  "limitations": [
+    "黄経はコンソール表示上、小数点以下が丸められているため、記録値240度は表示値である。",
+    "1ミリ秒の探索間隔は数値上の境界区間を示すものであり、物理的な時刻精度を保証するものではない。",
+    "このテストは水星の蠍座から射手座への順行時の移動1例を確認したものであり、逆行時の移動は別途検証が必要。",
+    "JPLによる独立した移動時刻の照合は未実施。"
+  ]
+}
