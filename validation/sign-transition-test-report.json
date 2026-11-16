@@ -1,1 +1,63 @@
 
+{
+  "report_name": "Solar Zodiac Sign Transition Test Report",
+  "report_version": "1.0.0",
+  "test_date": "2026-11-16",
+  "target_file": "engine/position-calculator.js",
+  "tested_planet": "sun",
+  "zodiac_system": "tropical",
+  "coordinate_system": "geocentric_true_ecliptic_of_date",
+  "test_transition": {
+    "from_sign": "scorpio",
+    "to_sign": "sagittarius",
+    "boundary_longitude_degrees": 240,
+    "expected_rule": "The boundary belongs to the new sign."
+  },
+  "calculation_method": {
+    "library": "Astronomy Engine",
+    "position_method": "GeoVector(body, time, true) -> Ecliptic(vector)",
+    "search_method": "Binary search",
+    "search_resolution_milliseconds": 1,
+    "longitude_precision": "Unrounded internal value"
+  },
+  "transition_result": {
+    "last_millisecond_before": {
+      "datetime_utc": "2026-11-22T07:23:27.975Z",
+      "datetime_jst": "2026-11-22T16:23:27.975+09:00",
+      "longitude_degrees": 239.999999994784,
+      "sign": "scorpio",
+      "expected_sign": "scorpio",
+      "passed": true
+    },
+    "first_millisecond_after": {
+      "datetime_utc": "2026-11-22T07:23:27.976Z",
+      "datetime_jst": "2026-11-22T16:23:27.976+09:00",
+      "longitude_degrees": 240.000000006471,
+      "sign": "sagittarius",
+      "expected_sign": "sagittarius",
+      "passed": true
+    },
+    "one_millisecond_later": {
+      "datetime_utc": "2026-11-22T07:23:27.977Z",
+      "datetime_jst": "2026-11-22T16:23:27.977+09:00",
+      "longitude_degrees": 240.000000018160,
+      "sign": "sagittarius",
+      "expected_sign": "sagittarius",
+      "passed": true
+    }
+  },
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_tests_passed": true,
+    "status": "ALL PASS",
+    "transition_interval_milliseconds": 1
+  },
+  "limitations": [
+    "The transition time is localized to a one-millisecond interval by numerical search.",
+    "Millisecond search resolution does not guarantee millisecond physical accuracy.",
+    "This test validates one solar sign transition only.",
+    "Independent JPL verification of the exact transition time has not yet been performed."
+  ]
+}
