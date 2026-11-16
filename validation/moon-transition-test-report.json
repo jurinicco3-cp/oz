@@ -1,1 +1,63 @@
 
+{
+  "report_name": "Moon Zodiac Sign Transition Test Report",
+  "report_version": "1.0.0",
+  "test_date": "2026-11-16",
+  "target_file": "engine/position-calculator.js",
+  "tested_planet": "moon",
+  "zodiac_system": "tropical",
+  "coordinate_system": "geocentric_true_ecliptic_of_date",
+  "test_transition": {
+    "from_sign": "aquarius",
+    "to_sign": "pisces",
+    "boundary_longitude_degrees": 330,
+    "expected_rule": "The boundary belongs to the new sign."
+  },
+  "calculation_method": {
+    "library": "Astronomy Engine",
+    "position_method": "GeoVector(body, time, true) -> Ecliptic(vector)",
+    "search_method": "Binary search",
+    "search_resolution_milliseconds": 1,
+    "longitude_precision": "Unrounded internal value"
+  },
+  "transition_result": {
+    "last_millisecond_before": {
+      "datetime_utc": "2026-11-17T21:19:21.329Z",
+      "datetime_jst": "2026-11-18T06:19:21.329+09:00",
+      "longitude_degrees": 329.999999984878,
+      "sign": "aquarius",
+      "expected_sign": "aquarius",
+      "passed": true
+    },
+    "first_millisecond_after": {
+      "datetime_utc": "2026-11-17T21:19:21.330Z",
+      "datetime_jst": "2026-11-18T06:19:21.330+09:00",
+      "longitude_degrees": 330.000000127230,
+      "sign": "pisces",
+      "expected_sign": "pisces",
+      "passed": true
+    },
+    "one_millisecond_later": {
+      "datetime_utc": "2026-11-17T21:19:21.331Z",
+      "datetime_jst": "2026-11-18T06:19:21.331+09:00",
+      "longitude_degrees": 330.000000269562,
+      "sign": "pisces",
+      "expected_sign": "pisces",
+      "passed": true
+    }
+  },
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "all_tests_passed": true,
+    "status": "ALL PASS",
+    "transition_interval_milliseconds": 1
+  },
+  "limitations": [
+    "The transition time is localized to a one-millisecond interval by numerical search.",
+    "Millisecond search resolution does not guarantee millisecond physical accuracy.",
+    "This test validates one lunar sign transition only.",
+    "Independent JPL verification of the exact transition time has not yet been performed."
+  ]
+}
