@@ -1,3 +1,4 @@
+
 /**
  * position-calculator.js
  *
@@ -140,7 +141,21 @@
   }
 
   // ==========================================
-  // 6. 黄経から星座を判定
+  // 6. 黄緯の数値チェック
+  // ==========================================
+
+  function validateLatitude(degrees) {
+    if (!Number.isFinite(degrees)) {
+      throw new Error(
+        "黄緯が有効な数値ではありません。"
+      );
+    }
+
+    return degrees;
+  }
+
+  // ==========================================
+  // 7. 黄経から星座を判定
   // ==========================================
 
   function getSignPosition(longitude) {
@@ -161,7 +176,7 @@
   }
 
   // ==========================================
-  // 7. 日時の正規化
+  // 8. 日時の正規化
   // ==========================================
 
   function normalizeDate(date) {
@@ -180,10 +195,10 @@
   }
 
   // ==========================================
-  // 8. 天体の地心黄経を取得
+  // 9. 天体の地心黄経・黄緯を取得
   // ==========================================
 
-  function getEclipticLongitude(
+  function getEclipticCoordinates(
     planetName,
     date
   ) {
@@ -205,43 +220,87 @@
 
     if (
       !ecliptic ||
-      !Number.isFinite(ecliptic.elon)
+      !Number.isFinite(ecliptic.elon) ||
+      !Number.isFinite(ecliptic.elat)
     ) {
       throw new Error(
-        `${planetName}の黄経を取得できませんでした。`
+        `${planetName}の黄道座標を取得できませんでした。`
       );
     }
 
-    return normalizeLongitude(ecliptic.elon);
+    return {
+      longitude: normalizeLongitude(ecliptic.elon),
+
+      latitude: validateLatitude(ecliptic.elat)
+    };
   }
 
   // ==========================================
-  // 9. 1天体の位置を計算
+  // 10. 黄経のみを取得（互換性維持）
+  // ==========================================
+
+  function getEclipticLongitude(
+    planetName,
+    date
+  ) {
+    return getEclipticCoordinates(
+      planetName,
+      date
+    ).longitude;
+  }
+
+  // ==========================================
+  // 11. 黄緯のみを取得
+  // ==========================================
+
+  function getEclipticLatitude(
+    planetName,
+    date
+  ) {
+    return getEclipticCoordinates(
+      planetName,
+      date
+    ).latitude;
+  }
+
+  // ==========================================
+  // 12. 1天体の位置を計算
   // ==========================================
 
   function calculatePlanetPosition(
     planetName,
     date
   ) {
-    const longitude = getEclipticLongitude(
+    const coordinates = getEclipticCoordinates(
       planetName,
       date
     );
+
+    const longitude = coordinates.longitude;
 
     const signPosition =
       getSignPosition(longitude);
 
     return {
-      longitude: Number(longitude.toFixed(6)),
+      longitude: Number(
+        longitude.toFixed(6)
+      ),
+
+      latitude: Number(
+        coordinates.latitude.toFixed(6)
+      ),
+
       sign: signPosition.sign,
+
       sign_index: signPosition.sign_index,
+
       degree_in_sign:
         signPosition.degree_in_sign
     };
   }
 
   // ==========================================
-  // 10. 10天体の位置を一括計算
+  // 13. 10天体の位置を一括計算
   // ==========================================
 
   function calculatePositions(date) {
@@ -261,32 +320,36 @@
 
     return {
       datetime: targetDate.toISOString(),
-    
+
       coordinate_system:
         "geocentric_true_ecliptic_of_date",
-    
+
       position_type:
         "apparent",
-    
+
       corrections: {
         light_time: true,
         aberration: true
       },
-    
+
       zodiac: "tropical",
-    
+
       planets: planets
     };
-  } 
+  }
 
   // ==========================================
-  // 11. 外部公開API
+  // 14. 外部公開API
   // ==========================================
 
   global.PositionCalculator = Object.freeze({
     calculatePositions,
     calculatePlanetPosition,
+
+    getEclipticCoordinates,
     getEclipticLongitude,
+    getEclipticLatitude,
+
     getSignPosition,
     normalizeLongitude,
 
