@@ -1,1 +1,47 @@
 
+{
+  "report_name": "Zodiac Boundary Test Report",
+  "report_version": "1.0.0",
+  "test_date": "2026-11-16",
+  "target_file": "engine/position-calculator.js",
+  "tested_function": "getSignPosition",
+  "test_method": {
+    "boundary_interval_degrees": 30,
+    "epsilon_degrees": 0.000001,
+    "cases_per_boundary": [
+      "just_before",
+      "exact_boundary",
+      "just_after"
+    ],
+    "boundary_rule": "The boundary belongs to the new sign."
+  },
+  "sign_boundaries": [
+    {"sign": "aries", "boundary_degree": 0},
+    {"sign": "taurus", "boundary_degree": 30},
+    {"sign": "gemini", "boundary_degree": 60},
+    {"sign": "cancer", "boundary_degree": 90},
+    {"sign": "leo", "boundary_degree": 120},
+    {"sign": "virgo", "boundary_degree": 150},
+    {"sign": "libra", "boundary_degree": 180},
+    {"sign": "scorpio", "boundary_degree": 210},
+    {"sign": "sagittarius", "boundary_degree": 240},
+    {"sign": "capricorn", "boundary_degree": 270},
+    {"sign": "aquarius", "boundary_degree": 300},
+    {"sign": "pisces", "boundary_degree": 330}
+  ],
+  "summary": {
+    "total_boundaries": 12,
+    "cases_per_boundary": 3,
+    "total_tests": 36,
+    "passed": 36,
+    "failed": 0,
+    "all_tests_passed": true,
+    "status": "ALL PASS"
+  },
+  "limitations": [
+    "This test validates zodiac classification from ecliptic longitude.",
+    "This test does not validate astronomical position accuracy.",
+    "This test does not validate time-dependent sign transitions."
+  ]
+}
+
