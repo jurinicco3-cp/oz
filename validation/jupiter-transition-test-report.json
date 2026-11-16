@@ -1,1 +1,56 @@
 
+{
+  "report_name": "Jupiter Sign Transition Test",
+  "report_version": "1.0.0",
+  "test_date": "2026-11-16",
+  "planet": "jupiter",
+  "zodiac_system": "tropical",
+  "coordinate_system": "geocentric_true_ecliptic_of_date",
+  "search_period_days": 600,
+  "transition": {
+    "from_sign": "leo",
+    "to_sign": "virgo",
+    "boundary_longitude_deg": 150,
+    "transition_time_utc": "2027-07-26T04:45:20.432Z",
+    "transition_time_jst": "2027-07-26 13:45:20.432",
+    "search_resolution_ms": 1
+  },
+  "test_results": [
+    {
+      "label": "直前",
+      "time_utc": "2027-07-26T04:45:20.431Z",
+      "expected_sign": "leo",
+      "actual_sign": "leo",
+      "displayed_longitude_deg": 150,
+      "passed": true
+    },
+    {
+      "label": "境界到達後",
+      "time_utc": "2027-07-26T04:45:20.432Z",
+      "expected_sign": "virgo",
+      "actual_sign": "virgo",
+      "displayed_longitude_deg": 150,
+      "passed": true
+    },
+    {
+      "label": "直後",
+      "time_utc": "2027-07-26T04:45:20.433Z",
+      "expected_sign": "virgo",
+      "actual_sign": "virgo",
+      "displayed_longitude_deg": 150,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "status": "ALL PASS"
+  },
+  "limitations": [
+    "黄経はコンソール表示上、小数点以下が丸められているため、記録値150度は表示値である。",
+    "1ミリ秒の探索間隔は数値上の境界区間を示すものであり、物理的な時刻精度を保証するものではない。",
+    "このテストは木星の獅子座から乙女座への順行時の移動1例を確認したものであり、逆行時の移動は別途検証が必要。",
+    "JPLによる独立した移動時刻の照合は未実施。"
+  ]
+}
