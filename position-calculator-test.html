@@ -87,6 +87,9 @@
     </label>
 
     <button id="calculate">計算する</button>
+    <button id="retrograde-test">
+  水星の逆行・再通過テスト
+</button>
   </div>
 
   <div id="status">計算待機中です。</div>
@@ -114,9 +117,13 @@
 
   <h2>JSON出力</h2>
   <pre id="raw">未実行</pre>
+  <h2>水星の逆行・再通過テスト結果</h2>
+<div id="retrograde-status">未実行</div>
+<pre id="retrograde-result">未実行</pre>
 
   <script src="./astronomy/astronomy.browser.min.js"></script>
   <script src="./engine/position-calculator.js"></script>
+  <script src="./engine/mercury-retrograde-test.js"></script>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -250,6 +257,31 @@
 
     $("datetime").value = "2026-11-14T12:00";
     $("calculate").addEventListener("click", calculate);
+
+    $("retrograde-test").addEventListener("click", () => {
+  $("retrograde-status").textContent =
+    "水星の逆行・再通過を調査しています...";
+
+  $("retrograde-result").textContent = "";
+
+  try {
+    const report = MercuryRetrogradeTest.runTest();
+
+    $("retrograde-status").textContent =
+      report.result === "FOUND"
+        ? "再通過の候補が見つかりました。"
+        : "再通過は見つかりませんでした。";
+
+    $("retrograde-result").textContent =
+      JSON.stringify(report, null, 2);
+
+  } catch (error) {
+    $("retrograde-status").textContent =
+      "エラー：" + error.message;
+
+    console.error(error);
+  }
+});
   </script>
 
 </body>
