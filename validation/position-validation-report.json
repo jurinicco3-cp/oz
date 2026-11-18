@@ -1,8 +1,8 @@
 
 {
   "report_name": "Planet Position Validation Report",
-  "report_version": "1.1.0",
-  "validation_date": "2026-11-16",
+  "report_version": "1.2.0",
+  "validation_date": "2026-11-18",
   "reference": {
     "name": "NASA JPL Horizons",
     "system": "Horizons On-Line Ephemeris System",
@@ -40,12 +40,12 @@
     ]
   },
   "validation_criteria": {
-    "metric": "Absolute ecliptic coordinate difference",
-    "unit": "arcseconds",
-    "target_max_difference": 60,
-    "longitude_validated": true,
-    "latitude_validated": true,
-    "note": "Latitude was validated at the second test epoch only."
+  "metric": "Absolute ecliptic coordinate difference",
+  "unit": "arcseconds",
+  "target_max_difference": 60,
+  "longitude_validated": true,
+  "latitude_validated": true,
+  "note": "Longitude was validated at three test epochs. Latitude was validated at two test epochs."
   },
   "test_runs": [
     {
@@ -279,7 +279,159 @@
         },
         "status": "Passed for this single test epoch"
       }
+    },
+    {
+  "test_date": "2027-02-20T03:00:00Z",
+  "comparison": [
+    "ecliptic_longitude",
+    "ecliptic_latitude"
+  ],
+  "tolerance_arcsec": 60,
+  "reference_notes": [
+    "JPL Horizons DE441 Observer Table.",
+    "Observer: Geocenter, Earth (399).",
+    "JPL apparent positions include light-time, gravitational deflection, and stellar aberration.",
+    "Horizons EOP predictions covered through 2027-02-12, earlier than this test date.",
+    "Future UTC conversion used the last known leap-second value according to the Horizons output."
+  ],
+  "results": [
+    {
+      "body": "Sun",
+      "jpl_target_id": 10,
+      "jpl_longitude_deg": 331.2367942,
+      "app_longitude_deg": 331.236742,
+      "longitude_error_arcsec": 0.18792,
+      "jpl_latitude_deg": 0.0000374,
+      "app_latitude_deg": 0.000070,
+      "latitude_error_arcsec": 0.11736,
+      "sign": "pisces",
+      "degree_in_sign": 1.236742,
+      "passed": true
+    },
+    {
+      "body": "Moon",
+      "jpl_target_id": 301,
+      "jpl_longitude_deg": 139.5217443,
+      "app_longitude_deg": 139.522935,
+      "longitude_error_arcsec": 4.28652,
+      "jpl_latitude_deg": 0.0961382,
+      "app_latitude_deg": 0.095729,
+      "latitude_error_arcsec": 1.47312,
+      "sign": "leo",
+      "degree_in_sign": 19.522935,
+      "passed": true
+    },
+    {
+      "body": "Mercury",
+      "jpl_target_id": 199,
+      "jpl_longitude_deg": 328.1729294,
+      "app_longitude_deg": 328.174503,
+      "longitude_error_arcsec": 5.66496,
+      "jpl_latitude_deg": 3.7133270,
+      "app_latitude_deg": 3.712678,
+      "latitude_error_arcsec": 2.33640,
+      "sign": "aquarius",
+      "degree_in_sign": 28.174503,
+      "passed": true
+    },
+    {
+      "body": "Venus",
+      "jpl_target_id": 299,
+      "jpl_longitude_deg": 289.1945768,
+      "app_longitude_deg": 289.194610,
+      "longitude_error_arcsec": 0.11952,
+      "jpl_latitude_deg": 1.3422203,
+      "app_latitude_deg": 1.342444,
+      "latitude_error_arcsec": 0.80532,
+      "sign": "capricorn",
+      "degree_in_sign": 19.194610,
+      "passed": true
+    },
+    {
+      "body": "Mars",
+      "jpl_target_id": 499,
+      "jpl_longitude_deg": 150.5834774,
+      "app_longitude_deg": 150.584229,
+      "longitude_error_arcsec": 2.70576,
+      "jpl_latitude_deg": 4.4603971,
+      "app_latitude_deg": 4.460461,
+      "latitude_error_arcsec": 0.23040,
+      "sign": "virgo",
+      "degree_in_sign": 0.584229,
+      "passed": true
+    },
+    {
+      "body": "Jupiter",
+      "jpl_target_id": 599,
+      "jpl_longitude_deg": 140.8450893,
+      "app_longitude_deg": 140.845015,
+      "longitude_error_arcsec": 0.26748,
+      "jpl_latitude_deg": 1.0660895,
+      "app_latitude_deg": 1.065356,
+      "latitude_error_arcsec": 2.64060,
+      "sign": "leo",
+      "degree_in_sign": 20.845015,
+      "passed": true
+    },
+    {
+      "body": "Saturn",
+      "jpl_target_id": 699,
+      "jpl_longitude_deg": 12.1053734,
+      "app_longitude_deg": 12.102851,
+      "longitude_error_arcsec": 9.08064,
+      "jpl_latitude_deg": -2.2863943,
+      "app_latitude_deg": -2.285345,
+      "latitude_error_arcsec": 3.77748,
+      "sign": "aries",
+      "degree_in_sign": 12.102851,
+      "passed": true
+    },
+    {
+      "body": "Uranus",
+      "jpl_target_id": 799,
+      "jpl_longitude_deg": 61.7428431,
+      "app_longitude_deg": 61.742661,
+      "longitude_error_arcsec": 0.65556,
+      "jpl_latitude_deg": -0.1276165,
+      "app_latitude_deg": -0.125951,
+      "latitude_error_arcsec": 5.99580,
+      "sign": "gemini",
+      "degree_in_sign": 1.742661,
+      "passed": true
+    },
+    {
+      "body": "Neptune",
+      "jpl_target_id": 899,
+      "jpl_longitude_deg": 2.8901801,
+      "app_longitude_deg": 2.893319,
+      "longitude_error_arcsec": 11.30004,
+      "jpl_latitude_deg": -1.3515009,
+      "app_latitude_deg": -1.348996,
+      "latitude_error_arcsec": 9.01764,
+      "sign": "aries",
+      "degree_in_sign": 2.893319,
+      "passed": true
     }
+  ],
+  "summary": {
+    "bodies_tested": 9,
+    "longitude": {
+      "bodies_within_target": 9,
+      "maximum_difference_arcsec": 11.30004,
+      "maximum_difference_body": "Neptune",
+      "mean_absolute_difference_arcsec": 3.80760,
+      "all_bodies_within_60_arcsec": true
+    },
+    "latitude": {
+      "bodies_within_target": 9,
+      "maximum_difference_arcsec": 9.01764,
+      "maximum_difference_body": "Neptune",
+      "mean_absolute_difference_arcsec": 2.93268,
+      "all_bodies_within_60_arcsec": true
+    },
+    "status": "Passed for this single test epoch"
+  }
+}
   ],
   "overall_summary": {
     "bodies_tested_per_epoch": 9,
