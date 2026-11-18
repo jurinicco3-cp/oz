@@ -1,1 +1,79 @@
-
+{
+  "test_name": "Mercury Retrograde Crossing Verification",
+  "test_date": "2026-11-18T11:37:04.779Z",
+  "planet": "mercury",
+  "boundary_longitude": 330,
+  "offset_minutes": 10,
+  "total_tests": 3,
+  "passed": 3,
+  "failed": 0,
+  "overall_result": "ALL_PASS",
+  "results": [
+    {
+      "name": "1回目：順行で魚座へ",
+      "crossing_utc": "2027-02-01T01:26:46.529Z",
+      "boundary_longitude": 330,
+      "before": {
+        "time_utc": "2027-02-01T01:16:46.529Z",
+        "sign": "aquarius",
+        "longitude": 329.991392,
+        "expected_sign": "aquarius",
+        "sign_check": true,
+        "longitude_check": true
+      },
+      "after": {
+        "time_utc": "2027-02-01T01:36:46.529Z",
+        "sign": "pisces",
+        "longitude": 330.0086,
+        "expected_sign": "pisces",
+        "sign_check": true,
+        "longitude_check": true
+      },
+      "result": "PASS"
+    },
+    {
+      "name": "2回目：逆行で水瓶座へ戻る",
+      "crossing_utc": "2027-02-18T12:17:06.011Z",
+      "boundary_longitude": 330,
+      "before": {
+        "time_utc": "2027-02-18T12:07:06.011Z",
+        "sign": "pisces",
+        "longitude": 330.007815,
+        "expected_sign": "pisces",
+        "sign_check": true,
+        "longitude_check": true
+      },
+      "after": {
+        "time_utc": "2027-02-18T12:27:06.011Z",
+        "sign": "aquarius",
+        "longitude": 329.992192,
+        "expected_sign": "aquarius",
+        "sign_check": true,
+        "longitude_check": true
+      },
+      "result": "PASS"
+    },
+    {
+      "name": "3回目：順行で再び魚座へ",
+      "crossing_utc": "2027-03-18T10:02:12.603Z",
+      "boundary_longitude": 330,
+      "before": {
+        "time_utc": "2027-03-18T09:52:12.603Z",
+        "sign": "aquarius",
+        "longitude": 329.992714,
+        "expected_sign": "aquarius",
+        "sign_check": true,
+        "longitude_check": true
+      },
+      "after": {
+        "time_utc": "2027-03-18T10:12:12.603Z",
+        "sign": "pisces",
+        "longitude": 330.007286,
+        "expected_sign": "pisces",
+        "sign_check": true,
+        "longitude_check": true
+      },
+      "result": "PASS"
+    }
+  ]
+}
