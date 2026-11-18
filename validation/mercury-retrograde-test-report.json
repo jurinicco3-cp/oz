@@ -1,1 +1,487 @@
-
+{
+  "test_name": "Mercury Retrograde Zodiac Recrossing",
+  "test_period": {
+    "start_utc": "2026-01-01T00:00:00.000Z",
+    "end_utc": "2029-01-01T00:00:00.000Z"
+  },
+  "scan_interval_hours": 6,
+  "total_crossings": 44,
+  "result": "FOUND",
+  "recrossing": {
+    "boundary_longitude": 330,
+    "crossings": [
+      {
+        "direction": "direct",
+        "direction_value": 1,
+        "boundary_longitude": 330,
+        "from_sign": "aquarius",
+        "to_sign": "pisces",
+        "bracket_start_utc": "2027-02-01T01:26:46.200Z",
+        "bracket_end_utc": "2027-02-01T01:26:46.859Z",
+        "estimated_utc": "2027-02-01T01:26:46.529Z"
+      },
+      {
+        "direction": "retrograde",
+        "direction_value": -1,
+        "boundary_longitude": 330,
+        "from_sign": "pisces",
+        "to_sign": "aquarius",
+        "bracket_start_utc": "2027-02-18T12:17:05.682Z",
+        "bracket_end_utc": "2027-02-18T12:17:06.341Z",
+        "estimated_utc": "2027-02-18T12:17:06.011Z"
+      },
+      {
+        "direction": "direct",
+        "direction_value": 1,
+        "boundary_longitude": 330,
+        "from_sign": "aquarius",
+        "to_sign": "pisces",
+        "bracket_start_utc": "2027-03-18T10:02:12.274Z",
+        "bracket_end_utc": "2027-03-18T10:02:12.933Z",
+        "estimated_utc": "2027-03-18T10:02:12.603Z"
+      }
+    ]
+  },
+  "all_crossings": [
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 270,
+      "from_sign": "sagittarius",
+      "to_sign": "capricorn",
+      "bracket_start_utc": "2026-01-01T21:11:08.407Z",
+      "bracket_end_utc": "2026-01-01T21:11:09.066Z",
+      "estimated_utc": "2026-01-01T21:11:08.736Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 300,
+      "from_sign": "capricorn",
+      "to_sign": "aquarius",
+      "bracket_start_utc": "2026-01-20T16:41:24.886Z",
+      "bracket_end_utc": "2026-01-20T16:41:25.546Z",
+      "estimated_utc": "2026-01-20T16:41:25.216Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 330,
+      "from_sign": "aquarius",
+      "to_sign": "pisces",
+      "bracket_start_utc": "2026-02-06T22:47:58.417Z",
+      "bracket_end_utc": "2026-02-06T22:47:59.076Z",
+      "estimated_utc": "2026-02-06T22:47:58.746Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 0,
+      "from_sign": "pisces",
+      "to_sign": "aries",
+      "bracket_start_utc": "2026-04-15T03:21:15.511Z",
+      "bracket_end_utc": "2026-04-15T03:21:16.171Z",
+      "estimated_utc": "2026-04-15T03:21:15.841Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 30,
+      "from_sign": "aries",
+      "to_sign": "taurus",
+      "bracket_start_utc": "2026-05-03T02:57:12.568Z",
+      "bracket_end_utc": "2026-05-03T02:57:13.227Z",
+      "estimated_utc": "2026-05-03T02:57:12.897Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 60,
+      "from_sign": "taurus",
+      "to_sign": "gemini",
+      "bracket_start_utc": "2026-05-17T10:26:20.492Z",
+      "bracket_end_utc": "2026-05-17T10:26:21.151Z",
+      "estimated_utc": "2026-05-17T10:26:20.821Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 90,
+      "from_sign": "gemini",
+      "to_sign": "cancer",
+      "bracket_start_utc": "2026-06-01T11:55:42.260Z",
+      "bracket_end_utc": "2026-06-01T11:55:42.919Z",
+      "estimated_utc": "2026-06-01T11:55:42.589Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 120,
+      "from_sign": "cancer",
+      "to_sign": "leo",
+      "bracket_start_utc": "2026-08-09T16:28:09.916Z",
+      "bracket_end_utc": "2026-08-09T16:28:10.575Z",
+      "estimated_utc": "2026-08-09T16:28:10.245Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 150,
+      "from_sign": "leo",
+      "to_sign": "virgo",
+      "bracket_start_utc": "2026-08-25T11:04:19.276Z",
+      "bracket_end_utc": "2026-08-25T11:04:19.935Z",
+      "estimated_utc": "2026-08-25T11:04:19.605Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 180,
+      "from_sign": "virgo",
+      "to_sign": "libra",
+      "bracket_start_utc": "2026-09-10T16:21:13.315Z",
+      "bracket_end_utc": "2026-09-10T16:21:13.974Z",
+      "estimated_utc": "2026-09-10T16:21:13.644Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 210,
+      "from_sign": "libra",
+      "to_sign": "scorpio",
+      "bracket_start_utc": "2026-09-30T11:44:41.761Z",
+      "bracket_end_utc": "2026-09-30T11:44:42.421Z",
+      "estimated_utc": "2026-09-30T11:44:42.091Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 240,
+      "from_sign": "scorpio",
+      "to_sign": "sagittarius",
+      "bracket_start_utc": "2026-12-06T08:33:51.810Z",
+      "bracket_end_utc": "2026-12-06T08:33:52.469Z",
+      "estimated_utc": "2026-12-06T08:33:52.139Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 270,
+      "from_sign": "sagittarius",
+      "to_sign": "capricorn",
+      "bracket_start_utc": "2026-12-25T18:22:54.388Z",
+      "bracket_end_utc": "2026-12-25T18:22:55.047Z",
+      "estimated_utc": "2026-12-25T18:22:54.717Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 300,
+      "from_sign": "capricorn",
+      "to_sign": "aquarius",
+      "bracket_start_utc": "2027-01-13T06:06:22.323Z",
+      "bracket_end_utc": "2027-01-13T06:06:22.982Z",
+      "estimated_utc": "2027-01-13T06:06:22.652Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 330,
+      "from_sign": "aquarius",
+      "to_sign": "pisces",
+      "bracket_start_utc": "2027-02-01T01:26:46.200Z",
+      "bracket_end_utc": "2027-02-01T01:26:46.859Z",
+      "estimated_utc": "2027-02-01T01:26:46.529Z"
+    },
+    {
+      "direction": "retrograde",
+      "direction_value": -1,
+      "boundary_longitude": 330,
+      "from_sign": "pisces",
+      "to_sign": "aquarius",
+      "bracket_start_utc": "2027-02-18T12:17:05.682Z",
+      "bracket_end_utc": "2027-02-18T12:17:06.341Z",
+      "estimated_utc": "2027-02-18T12:17:06.011Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 330,
+      "from_sign": "aquarius",
+      "to_sign": "pisces",
+      "bracket_start_utc": "2027-03-18T10:02:12.274Z",
+      "bracket_end_utc": "2027-03-18T10:02:12.933Z",
+      "estimated_utc": "2027-03-18T10:02:12.603Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 0,
+      "from_sign": "pisces",
+      "to_sign": "aries",
+      "bracket_start_utc": "2027-04-08T23:20:32.885Z",
+      "bracket_end_utc": "2027-04-08T23:20:33.544Z",
+      "estimated_utc": "2027-04-08T23:20:33.214Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 30,
+      "from_sign": "aries",
+      "to_sign": "taurus",
+      "bracket_start_utc": "2027-04-24T22:18:35.771Z",
+      "bracket_end_utc": "2027-04-24T22:18:36.430Z",
+      "estimated_utc": "2027-04-24T22:18:36.100Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 60,
+      "from_sign": "taurus",
+      "to_sign": "gemini",
+      "bracket_start_utc": "2027-05-09T01:58:00.248Z",
+      "bracket_end_utc": "2027-05-09T01:58:00.907Z",
+      "estimated_utc": "2027-05-09T01:58:00.577Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 90,
+      "from_sign": "gemini",
+      "to_sign": "cancer",
+      "bracket_start_utc": "2027-05-28T17:07:20.550Z",
+      "bracket_end_utc": "2027-05-28T17:07:21.210Z",
+      "estimated_utc": "2027-05-28T17:07:20.880Z"
+    },
+    {
+      "direction": "retrograde",
+      "direction_value": -1,
+      "boundary_longitude": 90,
+      "from_sign": "cancer",
+      "to_sign": "gemini",
+      "bracket_start_utc": "2027-06-26T07:23:29.765Z",
+      "bracket_end_utc": "2027-06-26T07:23:30.424Z",
+      "estimated_utc": "2027-06-26T07:23:30.094Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 90,
+      "from_sign": "gemini",
+      "to_sign": "cancer",
+      "bracket_start_utc": "2027-07-12T13:45:16.918Z",
+      "bracket_end_utc": "2027-07-12T13:45:17.578Z",
+      "estimated_utc": "2027-07-12T13:45:17.248Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 120,
+      "from_sign": "cancer",
+      "to_sign": "leo",
+      "bracket_start_utc": "2027-08-02T10:52:22.089Z",
+      "bracket_end_utc": "2027-08-02T10:52:22.748Z",
+      "estimated_utc": "2027-08-02T10:52:22.418Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 150,
+      "from_sign": "leo",
+      "to_sign": "virgo",
+      "bracket_start_utc": "2027-08-17T04:43:07.059Z",
+      "bracket_end_utc": "2027-08-17T04:43:07.718Z",
+      "estimated_utc": "2027-08-17T04:43:07.388Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 180,
+      "from_sign": "virgo",
+      "to_sign": "libra",
+      "bracket_start_utc": "2027-09-03T11:36:31.331Z",
+      "bracket_end_utc": "2027-09-03T11:36:31.991Z",
+      "estimated_utc": "2027-09-03T11:36:31.661Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 210,
+      "from_sign": "libra",
+      "to_sign": "scorpio",
+      "bracket_start_utc": "2027-09-27T09:08:35.477Z",
+      "bracket_end_utc": "2027-09-27T09:08:36.136Z",
+      "estimated_utc": "2027-09-27T09:08:35.806Z"
+    },
+    {
+      "direction": "retrograde",
+      "direction_value": -1,
+      "boundary_longitude": 210,
+      "from_sign": "scorpio",
+      "to_sign": "libra",
+      "bracket_start_utc": "2027-10-16T07:38:00.541Z",
+      "bracket_end_utc": "2027-10-16T07:38:01.200Z",
+      "estimated_utc": "2027-10-16T07:38:00.870Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 210,
+      "from_sign": "libra",
+      "to_sign": "scorpio",
+      "bracket_start_utc": "2027-11-10T00:26:28.622Z",
+      "bracket_end_utc": "2027-11-10T00:26:29.281Z",
+      "estimated_utc": "2027-11-10T00:26:28.951Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 240,
+      "from_sign": "scorpio",
+      "to_sign": "sagittarius",
+      "bracket_start_utc": "2027-11-29T10:23:38.993Z",
+      "bracket_end_utc": "2027-11-29T10:23:39.652Z",
+      "estimated_utc": "2027-11-29T10:23:39.322Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 270,
+      "from_sign": "sagittarius",
+      "to_sign": "capricorn",
+      "bracket_start_utc": "2027-12-18T11:58:11.894Z",
+      "bracket_end_utc": "2027-12-18T11:58:12.553Z",
+      "estimated_utc": "2027-12-18T11:58:12.223Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 300,
+      "from_sign": "capricorn",
+      "to_sign": "aquarius",
+      "bracket_start_utc": "2028-01-06T05:57:59.369Z",
+      "bracket_end_utc": "2028-01-06T05:58:00.028Z",
+      "estimated_utc": "2028-01-06T05:57:59.698Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 330,
+      "from_sign": "aquarius",
+      "to_sign": "pisces",
+      "bracket_start_utc": "2028-03-13T07:07:10.883Z",
+      "bracket_end_utc": "2028-03-13T07:07:11.542Z",
+      "estimated_utc": "2028-03-13T07:07:11.212Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 0,
+      "from_sign": "pisces",
+      "to_sign": "aries",
+      "bracket_start_utc": "2028-03-31T12:28:10.136Z",
+      "bracket_end_utc": "2028-03-31T12:28:10.795Z",
+      "estimated_utc": "2028-03-31T12:28:10.465Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 30,
+      "from_sign": "aries",
+      "to_sign": "taurus",
+      "bracket_start_utc": "2028-04-15T11:48:55.546Z",
+      "bracket_end_utc": "2028-04-15T11:48:56.205Z",
+      "estimated_utc": "2028-04-15T11:48:55.875Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 60,
+      "from_sign": "taurus",
+      "to_sign": "gemini",
+      "bracket_start_utc": "2028-05-01T01:42:38.715Z",
+      "bracket_end_utc": "2028-05-01T01:42:39.375Z",
+      "estimated_utc": "2028-05-01T01:42:39.045Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 90,
+      "from_sign": "gemini",
+      "to_sign": "cancer",
+      "bracket_start_utc": "2028-07-09T01:36:48.031Z",
+      "bracket_end_utc": "2028-07-09T01:36:48.691Z",
+      "estimated_utc": "2028-07-09T01:36:48.361Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 120,
+      "from_sign": "cancer",
+      "to_sign": "leo",
+      "bracket_start_utc": "2028-07-24T01:50:04.979Z",
+      "bracket_end_utc": "2028-07-24T01:50:05.638Z",
+      "estimated_utc": "2028-07-24T01:50:05.308Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 150,
+      "from_sign": "leo",
+      "to_sign": "virgo",
+      "bracket_start_utc": "2028-08-08T05:09:19.863Z",
+      "bracket_end_utc": "2028-08-08T05:09:20.522Z",
+      "estimated_utc": "2028-08-08T05:09:20.192Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 180,
+      "from_sign": "virgo",
+      "to_sign": "libra",
+      "bracket_start_utc": "2028-08-27T13:07:35.273Z",
+      "bracket_end_utc": "2028-08-27T13:07:35.932Z",
+      "estimated_utc": "2028-08-27T13:07:35.602Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 210,
+      "from_sign": "libra",
+      "to_sign": "scorpio",
+      "bracket_start_utc": "2028-11-02T15:03:29.618Z",
+      "bracket_end_utc": "2028-11-02T15:03:30.277Z",
+      "estimated_utc": "2028-11-02T15:03:29.947Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 240,
+      "from_sign": "scorpio",
+      "to_sign": "sagittarius",
+      "bracket_start_utc": "2028-11-21T03:59:25.502Z",
+      "bracket_end_utc": "2028-11-21T03:59:26.161Z",
+      "estimated_utc": "2028-11-21T03:59:25.831Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 270,
+      "from_sign": "sagittarius",
+      "to_sign": "capricorn",
+      "bracket_start_utc": "2028-12-10T09:11:40.706Z",
+      "bracket_end_utc": "2028-12-10T09:11:41.366Z",
+      "estimated_utc": "2028-12-10T09:11:41.036Z"
+    },
+    {
+      "direction": "direct",
+      "direction_value": 1,
+      "boundary_longitude": 300,
+      "from_sign": "capricorn",
+      "to_sign": "aquarius",
+      "bracket_start_utc": "2028-12-31T14:50:18.602Z",
+      "bracket_end_utc": "2028-12-31T14:50:19.261Z",
+      "estimated_utc": "2028-12-31T14:50:18.931Z"
+    }
+  ]
+}
