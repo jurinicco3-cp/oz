@@ -433,26 +433,27 @@
   }
 }
   ],
-  "overall_summary": {
+   "overall_summary": {
     "bodies_tested_per_epoch": 9,
-    "longitude_test_epochs": 2,
-    "latitude_test_epochs": 1,
+    "longitude_test_epochs": 3,
+    "latitude_test_epochs": 2,
     "longitude_all_tests_within_60_arcsec": true,
     "latitude_all_tests_within_60_arcsec": true,
     "status": "Passed for the tested epochs only"
   },
   "limitations": [
-    "Longitude was tested at two dates; latitude was tested at one date.",
-    "Only two test epochs have been evaluated.",
-    "JPL Horizons and Astronomy Engine use different apparent-position correction models.",
-    "JPL includes gravitational deflection of light; the calculator may not apply an identical correction.",
-    "The results do not establish accuracy across all dates or all possible observing conditions.",
-    "The 60 arcsecond threshold is the project's comparison criterion, not a guarantee of absolute accuracy."
+  "Longitude was tested at three dates; latitude was tested at two dates.",
+  "Only three test epochs have been evaluated.",
+  "JPL Horizons and Astronomy Engine use different apparent-position correction models.",
+  "JPL includes gravitational deflection of light; the calculator may not apply an identical correction.",
+  "The 2027-02-20 test date was later than the EOP prediction coverage stated in the Horizons output.",
+  "Horizons stated that future UTC conversion used the last known leap-second value.",
+  "The results do not establish accuracy across all dates or all possible observing conditions.",
+  "The 60 arcsecond threshold is the project's comparison criterion, not a guarantee of absolute accuracy."
   ],
   "next_steps": [
-    "Repeat longitude and latitude comparisons at additional dates.",
-    "Test positions near zodiac sign boundaries.",
-    "Add automated regression tests using the recorded reference values.",
-    "Preserve this report as a baseline for future regression tests."
+  "Add automated regression tests using the recorded reference values.",
+  "Preserve this report as a baseline for future regression tests.",
+  "Consider additional validation dates, especially near zodiac sign transitions and retrograde motion."
   ]
 }
