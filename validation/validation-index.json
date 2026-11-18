@@ -1,7 +1,9 @@
+
 {
   "index_name": "Astronomy Position Validation Index",
-  "index_version": "1.0.0",
+  "index_version": "1.1.0",
   "created_date": "2026-11-16",
+  "updated_date": "2026-11-18",
   "description": "天体位置計算エンジンの検証レポート一覧",
   "library": {
     "name": "Astronomy Engine",
@@ -31,6 +33,16 @@
     {
       "file": "mercury-transition-test-report.json",
       "category": "水星の星座移動",
+      "status": "saved"
+    },
+    {
+      "file": "mercury-retrograde-test-report.json",
+      "category": "水星の逆行による星座境界の再通過検出",
+      "status": "saved"
+    },
+    {
+      "file": "mercury-retrograde-verification-report.json",
+      "category": "水星の逆行・再通過の前後検証",
       "status": "saved"
     },
     {
@@ -72,6 +84,8 @@
   "notes": [
     "statusはファイルの存在を確認したことを示し、検証内容の完全性を保証するものではない。",
     "星座移動テストは選択した移動事例の確認であり、逆行による再通過を含む全移動の網羅検証ではない。",
-    "天体位置の比較結果はJPLとの比較差であり、計算誤差そのものを直接示すものではない。"
+    "天体位置の比較結果はJPLとの比較差であり、計算誤差そのものを直接示すものではない。",
+    "水星の逆行・再通過テストでは、2027年の黄経330度の境界について順行・逆行・再順行の3回の通過候補を検出した。",
+    "水星の逆行・再通過の前後検証では、3回すべての通過前後で星座判定と黄経の方向が一致した。"
   ]
 }
