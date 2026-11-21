@@ -1,1 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>占星術エンジン動作テスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
 
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    pre {
+      background: #f3f3f3;
+      padding: 16px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+  <h1>占星術エンジン動作テスト</h1>
+
+  <p>天体計算・アスペクト検出・イベント生成を確認します。</p>
+
+  <button id="run-test">テストを実行</button>
+
+  <h2>実行結果</h2>
+  <div id="status">まだ実行されていません。</div>
+  <pre id="result"></pre>
+
+  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script src="./position-calculator.js"></script>
+  <script src="./aspect-detector.js"></script>
+
+  <script type="module">
+    import { buildEvents } from "./event-builder.js";
+
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+
+    document.getElementById("run-test").addEventListener("click", () => {
+      try {
+        const date = new Date();
+
+        const positions =
+          window.PositionCalculator.calculatePositions(date);
+
+        const planets = positions.planets;
+        const planetNames = Object.keys(planets);
+        const aspects = [];
+
+        for (let i = 0; i < planetNames.length; i++) {
+          for (let j = i + 1; j < planetNames.length; j++) {
+            const planetA = planetNames[i];
+            const planetB = planetNames[j];
+
+            const detected = window.AspectDetector.detectAspect(
+              planets[planetA].longitude,
+              planets[planetB].longitude
+            );
+
+            if (detected) {
+              aspects.push({
+                planetA,
+                planetB,
+                aspectType: detected.aspectType,
+                exactTime: null,
+                orb: detected.orb,
+                applying: false
+              });
+            }
+          }
+        }
+
+        const events = buildEvents(aspects);
+
+        status.className = "success";
+        status.textContent = "テスト成功！";
+
+        result.textContent = JSON.stringify({
+          calculationDate: positions.datetime,
+          planetCount: planetNames.length,
+          aspectCount: aspects.length,
+          events
+        }, null, 2);
+
+      } catch (error) {
+        status.className = "error";
+        status.textContent = "エラーが発生しました。";
+        result.textContent = error.stack || error.message;
+      }
+    });
+  </script>
+
+</body>
+</html>
