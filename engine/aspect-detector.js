@@ -1,4 +1,3 @@
-
 /**
  * aspect-detector.js
  *
@@ -14,9 +13,15 @@ const ASPECTS = [
   { type: "opposition", angle: 180, orb: 8 }
 ];
 
+function normalizeLongitude(longitude) {
+  return ((longitude % 360) + 360) % 360;
+}
+
 function getAngularDistance(longitudeA, longitudeB) {
-  const difference =
-    Math.abs(longitudeA - longitudeB) % 360;
+  const difference = Math.abs(
+    normalizeLongitude(longitudeA) -
+    normalizeLongitude(longitudeB)
+  );
 
   return Math.min(difference, 360 - difference);
 }
@@ -29,8 +34,10 @@ function detectAspect(longitudeA, longitudeB) {
     return null;
   }
 
-  const angle =
-    getAngularDistance(longitudeA, longitudeB);
+  const angle = getAngularDistance(
+    longitudeA,
+    longitudeB
+  );
 
   for (const aspect of ASPECTS) {
     const orb = Math.abs(angle - aspect.angle);
@@ -74,22 +81,18 @@ function detectApplying(
     throw new TypeError("Invalid longitude value");
   }
 
-  const currentAngle = getAngularDistance(
-    currentLongitudeA,
-    currentLongitudeB
-  );
-
-  const futureAngle = getAngularDistance(
-    futureLongitudeA,
-    futureLongitudeB
-  );
-
   const currentOrb = Math.abs(
-    currentAngle - aspect.angle
+    getAngularDistance(
+      currentLongitudeA,
+      currentLongitudeB
+    ) - aspect.angle
   );
 
   const futureOrb = Math.abs(
-    futureAngle - aspect.angle
+    getAngularDistance(
+      futureLongitudeA,
+      futureLongitudeB
+    ) - aspect.angle
   );
 
   if (Math.abs(currentOrb - futureOrb) < 0.000001) {
@@ -100,14 +103,160 @@ function detectApplying(
 }
 
 /**
- * 指定期間内でオーブが最小になる時刻を探す。
+ * 2つの天体の相対角度を計算する。
+ * -180度から180度の範囲に正規化する。
+ */
+function getSignedRelativeAngle(longitudeA, longitudeB) {
+  let difference = normalizeLongitude(
+    longitudeA - longitudeB
+  );
+
+  if (difference > 180) {
+    difference -= 360;
+  }
+
+  return difference;
+}
+
+/**
+ * 指定時刻のアスペクト角度との差を計算する。
+ */
+function getAspectError(
+  timestamp,
+  planetA,
+  planetB,
+  aspect,
+  calculatePositions
+) {
+  const positions = calculatePositions(
+    new Date(timestamp)
+  );
+
+  const a = positions.planets[planetA];
+  const b = positions.planets[planetB];
+
+  if (
+    !a ||
+    !b ||
+    !Number.isFinite(a.longitude) ||
+    !Number.isFinite(b.longitude)
+  ) {
+    throw new Error("Planet position not found");
+  }
+
+  const relativeAngle = getSignedRelativeAngle(
+    a.longitude,
+    b.longitude
+  );
+
+  const targets = aspect.angle === 0
+    ? [0]
+    : aspect.angle === 180
+      ? [180]
+      : [aspect.angle, -aspect.angle];
+
+  let bestError = null;
+
+  for (const target of targets) {
+    const error = relativeAngle - target;
+
+    if (
+      bestError === null ||
+      Math.abs(error) < Math.abs(bestError)
+    ) {
+      bestError = error;
+    }
+  }
+
+  // 角度の境界をまたぐ場合に備えて正規化する。
+  while (bestError > 180) bestError -= 360;
+  while (bestError < -180) bestError += 360;
+
+  return {
+    timestamp,
+    relativeAngle,
+    error: bestError,
+    orb: Math.abs(bestError)
+  };
+}
+
+/**
+ * 符号が変わる区間を二分探索する。
+ */
+function refineAspectTime(
+  left,
+  right,
+  planetA,
+  planetB,
+  aspect,
+  calculatePositions
+) {
+  let leftResult = getAspectError(
+    left,
+    planetA,
+    planetB,
+    aspect,
+    calculatePositions
+  );
+
+  let rightResult = getAspectError(
+    right,
+    planetA,
+    planetB,
+    aspect,
+    calculatePositions
+  );
+
+  if (
+    leftResult.error * rightResult.error > 0
+  ) {
+    return null;
+  }
+
+  for (let i = 0; i < 60; i++) {
+    const middle = (left + right) / 2;
+
+    const middleResult = getAspectError(
+      middle,
+      planetA,
+      planetB,
+      aspect,
+      calculatePositions
+    );
+
+    if (Math.abs(middleResult.error) < 0.000001) {
+      return middleResult;
+    }
+
+    if (
+      leftResult.error * middleResult.error <= 0
+    ) {
+      right = middle;
+      rightResult = middleResult;
+    } else {
+      left = middle;
+      leftResult = middleResult;
+    }
+  }
+
+  return getAspectError(
+    (left + right) / 2,
+    planetA,
+    planetB,
+    aspect,
+    calculatePositions
+  );
+}
+
+/**
+ * 指定期間内の正確なアスペクト時刻を探す。
  *
- * calculatePositions(date) は
- * PositionCalculator.calculatePositions(date)
- * を渡す。
+ * sampleMinutes:
+ * 探索時の初期間隔（分）
  *
- * exactTime は十分な精度で正確な角度に
- * 到達した場合だけ返す。
+ * 戻り値:
+ * found = true の場合は exactTime に時刻を返す。
+ * events には期間内で検出した通過時刻を返す。
  */
 function findExactAspectTime(
   startDate,
@@ -148,90 +297,91 @@ function findExactAspectTime(
   const end = endDate.getTime();
   const step = sampleMinutes * 60 * 1000;
 
-  function getOrb(timestamp) {
-    const positions = calculatePositions(
-      new Date(timestamp)
-    );
+  const events = [];
+  let previous = getAspectError(
+    start,
+    planetA,
+    planetB,
+    aspect,
+    calculatePositions
+  );
 
-    const a = positions.planets[planetA];
-    const b = positions.planets[planetB];
+  let best = previous;
 
-    if (
-      !a ||
-      !b ||
-      !Number.isFinite(a.longitude) ||
-      !Number.isFinite(b.longitude)
-    ) {
-      throw new Error("Planet position not found");
-    }
-
-    const angle = getAngularDistance(
-      a.longitude,
-      b.longitude
-    );
-
-    return {
+  for (
+    let timestamp = Math.min(start + step, end);
+    timestamp <= end;
+    timestamp = Math.min(timestamp + step, end)
+  ) {
+    const current = getAspectError(
       timestamp,
-      angle,
-      orb: Math.abs(angle - aspect.angle)
-    };
-  }
+      planetA,
+      planetB,
+      aspect,
+      calculatePositions
+    );
 
-  // 指定期間を一定間隔で調べる。
-  let best = null;
-
-  for (let time = start; time <= end; time += step) {
-    const result = getOrb(time);
-
-    if (!best || result.orb < best.orb) {
-      best = result;
+    if (current.orb < best.orb) {
+      best = current;
     }
-  }
 
-  // 終了時刻も必ず調べる。
-  const last = getOrb(end);
+    // 正確な角度を通過した区間を検出する。
+    if (
+      previous.error === 0 ||
+      current.error === 0 ||
+      previous.error * current.error < 0
+    ) {
+      const refined = refineAspectTime(
+        previous.timestamp,
+        current.timestamp,
+        planetA,
+        planetB,
+        aspect,
+        calculatePositions
+      );
 
-  if (!best || last.orb < best.orb) {
-    best = last;
-  }
+      if (
+        refined &&
+        refined.orb <= 0.000001
+      ) {
+        const duplicate = events.some(
+          event =>
+            Math.abs(
+              event.timestamp - refined.timestamp
+            ) < 1000
+        );
 
-  // 最小値の周辺を細かく探索する。
-  let left = Math.max(start, best.timestamp - step);
-  let right = Math.min(end, best.timestamp + step);
-
-  for (let i = 0; i < 40; i++) {
-    const oneThird = (right - left) / 3;
-
-    const t1 = left + oneThird;
-    const t2 = right - oneThird;
-
-    const orb1 = getOrb(t1).orb;
-    const orb2 = getOrb(t2).orb;
-
-    if (orb1 <= orb2) {
-      right = t2;
-    } else {
-      left = t1;
+        if (!duplicate) {
+          events.push(refined);
+        }
+      }
     }
+
+    previous = current;
+
+    if (timestamp === end) break;
   }
 
-  const refined = getOrb((left + right) / 2);
-
-  if (refined.orb < best.orb) {
-    best = refined;
-  }
+  const firstEvent = events.length > 0
+    ? events[0]
+    : null;
 
   return {
     planetA,
     planetB,
     aspectType,
     exactAngle: aspect.angle,
-    orb: best.orb,
-    exactTime:
-      best.orb <= 0.001
-        ? new Date(best.timestamp).toISOString()
-        : null,
-    found: best.orb <= 0.001
+    orb: firstEvent ? firstEvent.orb : best.orb,
+    exactTime: firstEvent
+      ? new Date(firstEvent.timestamp).toISOString()
+      : null,
+    found: events.length > 0,
+    events: events.map(event => ({
+      exactTime: new Date(
+        event.timestamp
+      ).toISOString(),
+      orb: event.orb
+    }))
   };
 }
 
