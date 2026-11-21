@@ -57,7 +57,7 @@
         const now = new Date();
 
         const future = new Date(
-          now.getTime() + 24 * 60 * 60 * 1000
+          now.getTime() + 1 * 60 * 60 * 1000
         );
 
         const currentPositions =
@@ -116,7 +116,7 @@
         result.textContent = JSON.stringify({
           currentDate: currentPositions.datetime,
           futureDate: futurePositions.datetime,
-          comparisonHours: 24,
+          comparisonHours: 1,
           planetCount: planetNames.length,
           aspectCount: aspects.length,
           applyingCount: aspects.filter(
