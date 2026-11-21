@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: sans-serif;
-      max-width: 800px;
+      max-width: 900px;
       margin: 40px auto;
       padding: 20px;
       line-height: 1.7;
@@ -34,7 +34,7 @@
 
   <h1>占星術エンジン動作テスト</h1>
 
-  <p>天体計算・アスペクト検出・イベント生成を確認します。</p>
+  <p>天体位置・アスペクト・接近と分離の判定を確認します。</p>
 
   <button id="run-test">テストを実行</button>
 
@@ -54,13 +54,22 @@
 
     document.getElementById("run-test").addEventListener("click", () => {
       try {
-        const date = new Date();
+        const now = new Date();
 
-        const positions =
-          window.PositionCalculator.calculatePositions(date);
+        const future = new Date(
+          now.getTime() + 24 * 60 * 60 * 1000
+        );
 
-        const planets = positions.planets;
-        const planetNames = Object.keys(planets);
+        const currentPositions =
+          window.PositionCalculator.calculatePositions(now);
+
+        const futurePositions =
+          window.PositionCalculator.calculatePositions(future);
+
+        const currentPlanets = currentPositions.planets;
+        const futurePlanets = futurePositions.planets;
+
+        const planetNames = Object.keys(currentPlanets);
         const aspects = [];
 
         for (let i = 0; i < planetNames.length; i++) {
@@ -68,21 +77,34 @@
             const planetA = planetNames[i];
             const planetB = planetNames[j];
 
+            const currentA = currentPlanets[planetA].longitude;
+            const currentB = currentPlanets[planetB].longitude;
+            const futureA = futurePlanets[planetA].longitude;
+            const futureB = futurePlanets[planetB].longitude;
+
             const detected = window.AspectDetector.detectAspect(
-              planets[planetA].longitude,
-              planets[planetB].longitude
+              currentA,
+              currentB
             );
 
-            if (detected) {
-              aspects.push({
-                planetA,
-                planetB,
-                aspectType: detected.aspectType,
-                exactTime: null,
-                orb: detected.orb,
-                applying: false
-              });
-            }
+            if (!detected) continue;
+
+            const applying = window.AspectDetector.detectApplying(
+              currentA,
+              currentB,
+              futureA,
+              futureB,
+              detected.aspectType
+            );
+
+            aspects.push({
+              planetA,
+              planetB,
+              aspectType: detected.aspectType,
+              exactTime: null,
+              orb: detected.orb,
+              applying
+            });
           }
         }
 
@@ -92,9 +114,20 @@
         status.textContent = "テスト成功！";
 
         result.textContent = JSON.stringify({
-          calculationDate: positions.datetime,
+          currentDate: currentPositions.datetime,
+          futureDate: futurePositions.datetime,
+          comparisonHours: 24,
           planetCount: planetNames.length,
           aspectCount: aspects.length,
+          applyingCount: aspects.filter(
+            item => item.applying === true
+          ).length,
+          separatingCount: aspects.filter(
+            item => item.applying === false
+          ).length,
+          unchangedCount: aspects.filter(
+            item => item.applying === null
+          ).length,
           events
         }, null, 2);
 
