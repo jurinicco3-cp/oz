@@ -103,8 +103,7 @@ function detectApplying(
 }
 
 /**
- * 2つの天体の相対角度を計算する。
- * -180度から180度の範囲に正規化する。
+ * 相対角度を -180〜180度に正規化する。
  */
 function getSignedRelativeAngle(longitudeA, longitudeB) {
   let difference = normalizeLongitude(
@@ -119,13 +118,27 @@ function getSignedRelativeAngle(longitudeA, longitudeB) {
 }
 
 /**
- * 指定時刻のアスペクト角度との差を計算する。
+ * 2つの角度の差を -180〜180度に正規化する。
  */
-function getAspectError(
+function getSignedAngleDifference(angleA, angleB) {
+  let difference = normalizeLongitude(
+    angleA - angleB
+  );
+
+  if (difference > 180) {
+    difference -= 360;
+  }
+
+  return difference;
+}
+
+/**
+ * 指定時刻の相対角度を取得する。
+ */
+function getRelativeAngle(
   timestamp,
   planetA,
   planetB,
-  aspect,
   calculatePositions
 ) {
   const positions = calculatePositions(
@@ -144,119 +157,108 @@ function getAspectError(
     throw new Error("Planet position not found");
   }
 
-  const relativeAngle = getSignedRelativeAngle(
+  return getSignedRelativeAngle(
     a.longitude,
     b.longitude
   );
-
-  const targets = aspect.angle === 0
-    ? [0]
-    : aspect.angle === 180
-      ? [180]
-      : [aspect.angle, -aspect.angle];
-
-  let bestError = null;
-
-  for (const target of targets) {
-    const error = relativeAngle - target;
-
-    if (
-      bestError === null ||
-      Math.abs(error) < Math.abs(bestError)
-    ) {
-      bestError = error;
-    }
-  }
-
-  // 角度の境界をまたぐ場合に備えて正規化する。
-  while (bestError > 180) bestError -= 360;
-  while (bestError < -180) bestError += 360;
-
-  return {
-    timestamp,
-    relativeAngle,
-    error: bestError,
-    orb: Math.abs(bestError)
-  };
 }
 
 /**
- * 符号が変わる区間を二分探索する。
+ * 指定区間の左端を基準にした連続相対角度を取得する。
+ */
+function getUnwrappedAngle(
+  timestamp,
+  leftTimestamp,
+  leftAngle,
+  planetA,
+  planetB,
+  calculatePositions
+) {
+  const angle = getRelativeAngle(
+    timestamp,
+    planetA,
+    planetB,
+    calculatePositions
+  );
+
+  return leftAngle + getSignedAngleDifference(
+    angle,
+    getRelativeAngle(
+      leftTimestamp,
+      planetA,
+      planetB,
+      calculatePositions
+    )
+  );
+}
+
+/**
+ * アスペクトの正確な通過時刻を二分探索する。
  */
 function refineAspectTime(
   left,
   right,
+  leftAngle,
+  target,
   planetA,
   planetB,
-  aspect,
   calculatePositions
 ) {
-  let leftResult = getAspectError(
-    left,
-    planetA,
-    planetB,
-    aspect,
-    calculatePositions
-  );
-
-  let rightResult = getAspectError(
-    right,
-    planetA,
-    planetB,
-    aspect,
-    calculatePositions
-  );
-
-  if (
-    leftResult.error * rightResult.error > 0
-  ) {
-    return null;
-  }
+  let leftValue = leftAngle - target;
 
   for (let i = 0; i < 60; i++) {
     const middle = (left + right) / 2;
 
-    const middleResult = getAspectError(
+    const middleAngle = getUnwrappedAngle(
       middle,
+      left,
+      leftAngle,
       planetA,
       planetB,
-      aspect,
       calculatePositions
     );
 
-    if (Math.abs(middleResult.error) < 0.000001) {
-      return middleResult;
+    const middleValue = middleAngle - target;
+
+    if (Math.abs(middleValue) < 0.000001) {
+      left = middle;
+      right = middle;
+      break;
     }
 
-    if (
-      leftResult.error * middleResult.error <= 0
-    ) {
+    if (leftValue * middleValue <= 0) {
       right = middle;
-      rightResult = middleResult;
     } else {
       left = middle;
-      leftResult = middleResult;
+      leftAngle = middleAngle;
+      leftValue = middleValue;
     }
   }
 
-  return getAspectError(
-    (left + right) / 2,
+  const timestamp = (left + right) / 2;
+
+  const actualAngle = getRelativeAngle(
+    timestamp,
     planetA,
     planetB,
-    aspect,
     calculatePositions
   );
+
+  const actualError = Math.abs(
+    getSignedAngleDifference(
+      actualAngle,
+      normalizeLongitude(target)
+    )
+  );
+
+  return {
+    timestamp,
+    orb: actualError
+  };
 }
 
 /**
  * 指定期間内の正確なアスペクト時刻を探す。
- *
- * sampleMinutes:
- * 探索時の初期間隔（分）
- *
- * 戻り値:
- * found = true の場合は exactTime に時刻を返す。
- * events には期間内で検出した通過時刻を返す。
  */
 function findExactAspectTime(
   startDate,
@@ -265,7 +267,7 @@ function findExactAspectTime(
   planetB,
   aspectType,
   calculatePositions,
-  sampleMinutes = 60
+  sampleMinutes = 30
 ) {
   const aspect = ASPECTS.find(
     item => item.type === aspectType
@@ -297,70 +299,128 @@ function findExactAspectTime(
   const end = endDate.getTime();
   const step = sampleMinutes * 60 * 1000;
 
+  const targets = [];
+
+  if (aspect.angle === 0) {
+    targets.push(0);
+  } else if (aspect.angle === 180) {
+    targets.push(180);
+  } else {
+    targets.push(aspect.angle);
+    targets.push(-aspect.angle);
+  }
+
   const events = [];
-  let previous = getAspectError(
+
+  let previousTimestamp = start;
+  let previousAngle = getRelativeAngle(
     start,
     planetA,
     planetB,
-    aspect,
     calculatePositions
   );
 
-  let best = previous;
+  let bestOrb = Infinity;
 
   for (
     let timestamp = Math.min(start + step, end);
-    timestamp <= end;
+    ;
     timestamp = Math.min(timestamp + step, end)
   ) {
-    const current = getAspectError(
+    const currentAngle = getRelativeAngle(
       timestamp,
       planetA,
       planetB,
-      aspect,
       calculatePositions
     );
 
-    if (current.orb < best.orb) {
-      best = current;
-    }
+    const delta = getSignedAngleDifference(
+      currentAngle,
+      previousAngle
+    );
 
-    // 正確な角度を通過した区間を検出する。
-    if (
-      previous.error === 0 ||
-      current.error === 0 ||
-      previous.error * current.error < 0
-    ) {
-      const refined = refineAspectTime(
-        previous.timestamp,
-        current.timestamp,
-        planetA,
-        planetB,
-        aspect,
-        calculatePositions
+    const currentUnwrapped = previousAngle + delta;
+
+    for (const baseTarget of targets) {
+      const minAngle = Math.min(
+        previousAngle,
+        currentUnwrapped
       );
 
-      if (
-        refined &&
-        refined.orb <= 0.000001
-      ) {
-        const duplicate = events.some(
-          event =>
-            Math.abs(
-              event.timestamp - refined.timestamp
-            ) < 1000
+      const maxAngle = Math.max(
+        previousAngle,
+        currentUnwrapped
+      );
+
+      const firstK = Math.ceil(
+        (minAngle - baseTarget) / 360
+      );
+
+      const lastK = Math.floor(
+        (maxAngle - baseTarget) / 360
+      );
+
+      for (let k = firstK; k <= lastK; k++) {
+        const target = baseTarget + 360 * k;
+
+        const leftValue = previousAngle - target;
+        const rightValue = currentUnwrapped - target;
+
+        if (
+          leftValue * rightValue > 0 ||
+          Math.abs(leftValue - rightValue) < 0.000000001
+        ) {
+          continue;
+        }
+
+        const refined = refineAspectTime(
+          previousTimestamp,
+          timestamp,
+          previousAngle,
+          target,
+          planetA,
+          planetB,
+          calculatePositions
         );
 
-        if (!duplicate) {
+        if (
+          refined.orb <= 0.00001 &&
+          !events.some(
+            event =>
+              Math.abs(
+                event.timestamp - refined.timestamp
+              ) < 1000
+          )
+        ) {
           events.push(refined);
         }
       }
     }
 
-    previous = current;
+    const currentOrb = Math.min(
+      ...targets.map(target => {
+        const difference = getSignedAngleDifference(
+          currentAngle,
+          target
+        );
 
-    if (timestamp === end) break;
+        return Math.abs(difference);
+      })
+    );
+
+    bestOrb = Math.min(bestOrb, currentOrb);
+
+    previousTimestamp = timestamp;
+    previousAngle = currentUnwrapped;
+
+    if (timestamp === end) {
+      break;
+    }
   }
+
+  events.sort(
+    (a, b) => a.timestamp - b.timestamp
+  );
 
   const firstEvent = events.length > 0
     ? events[0]
@@ -371,7 +431,7 @@ function findExactAspectTime(
     planetB,
     aspectType,
     exactAngle: aspect.angle,
-    orb: firstEvent ? firstEvent.orb : best.orb,
+    orb: firstEvent ? firstEvent.orb : bestOrb,
     exactTime: firstEvent
       ? new Date(firstEvent.timestamp).toISOString()
       : null,
