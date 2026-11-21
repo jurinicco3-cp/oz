@@ -1,1 +1,434 @@
-
+{
+  "test_name": "Planet Position Automatic Regression Test",
+  "test_date": "2026-11-21T01:46:14.618Z",
+  "reference": "JPL Horizons Observer Table",
+  "threshold_arcseconds": 60,
+  "test_epochs": 3,
+  "total_tests": 45,
+  "passed": 45,
+  "failed": 0,
+  "overall_result": "ALL_PASS",
+  "longitude_summary": {
+    "count": 27,
+    "average_difference_arcsec": 3.80015,
+    "maximum_difference_arcsec": 12.1626
+  },
+  "latitude_summary": {
+    "count": 18,
+    "average_difference_arcsec": 2.77672,
+    "maximum_difference_arcsec": 9.54684
+  },
+  "details": [
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "sun",
+      "coordinate": "longitude",
+      "reference": 83.098223,
+      "actual": 83.097861,
+      "difference_arcsec": 1.3032,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "moon",
+      "coordinate": "longitude",
+      "reference": 68.8091368,
+      "actual": 68.809845,
+      "difference_arcsec": 2.54952,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "mercury",
+      "coordinate": "longitude",
+      "reference": 107.5015588,
+      "actual": 107.50152,
+      "difference_arcsec": 0.13968,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "venus",
+      "coordinate": "longitude",
+      "reference": 120.7870509,
+      "actual": 120.786952,
+      "difference_arcsec": 0.35604,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "mars",
+      "coordinate": "longitude",
+      "reference": 49.4079749,
+      "actual": 49.407808,
+      "difference_arcsec": 0.60084,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "jupiter",
+      "coordinate": "longitude",
+      "reference": 116.6380875,
+      "actual": 116.637532,
+      "difference_arcsec": 1.9998,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "saturn",
+      "coordinate": "longitude",
+      "reference": 13.2468941,
+      "actual": 13.244484,
+      "difference_arcsec": 8.67636,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "uranus",
+      "coordinate": "longitude",
+      "reference": 62.8116108,
+      "actual": 62.811336,
+      "difference_arcsec": 0.98928,
+      "passed": true
+    },
+    {
+      "date": "2026-06-14T03:00:00Z",
+      "body": "neptune",
+      "coordinate": "longitude",
+      "reference": 4.269942,
+      "actual": 4.273169,
+      "difference_arcsec": 11.6172,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "sun",
+      "coordinate": "longitude",
+      "reference": 231.7494506,
+      "actual": 231.749318,
+      "difference_arcsec": 0.47736,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "sun",
+      "coordinate": "latitude",
+      "reference": -0.0000499,
+      "actual": 0.000047,
+      "difference_arcsec": 0.34884,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "moon",
+      "coordinate": "longitude",
+      "reference": 285.0494989,
+      "actual": 285.050188,
+      "difference_arcsec": 2.48076,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "moon",
+      "coordinate": "latitude",
+      "reference": -3.247647,
+      "actual": -3.247434,
+      "difference_arcsec": 0.7668,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "mercury",
+      "coordinate": "longitude",
+      "reference": 215.0532467,
+      "actual": 215.053765,
+      "difference_arcsec": 1.86588,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "mercury",
+      "coordinate": "latitude",
+      "reference": 2.1119382,
+      "actual": 2.111809,
+      "difference_arcsec": 0.46512,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "venus",
+      "coordinate": "longitude",
+      "reference": 202.8638734,
+      "actual": 202.861068,
+      "difference_arcsec": 10.09944,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "venus",
+      "coordinate": "latitude",
+      "reference": -1.6338628,
+      "actual": -1.634112,
+      "difference_arcsec": 0.89712,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "mars",
+      "coordinate": "longitude",
+      "reference": 144.9250974,
+      "actual": 144.925016,
+      "difference_arcsec": 0.29304,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "mars",
+      "coordinate": "latitude",
+      "reference": 1.8896765,
+      "actual": 1.889565,
+      "difference_arcsec": 0.4014,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "jupiter",
+      "coordinate": "longitude",
+      "reference": 145.7062828,
+      "actual": 145.705764,
+      "difference_arcsec": 1.86768,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "jupiter",
+      "coordinate": "latitude",
+      "reference": 0.7368139,
+      "actual": 0.736304,
+      "difference_arcsec": 1.83564,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "saturn",
+      "coordinate": "longitude",
+      "reference": 8.5668489,
+      "actual": 8.564012,
+      "difference_arcsec": 10.21284,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "saturn",
+      "coordinate": "latitude",
+      "reference": -2.6482548,
+      "actual": -2.647317,
+      "difference_arcsec": 3.37608,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "uranus",
+      "coordinate": "longitude",
+      "reference": 64.1668979,
+      "actual": 64.166719,
+      "difference_arcsec": 0.64404,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "uranus",
+      "coordinate": "latitude",
+      "reference": -0.1497916,
+      "actual": -0.148139,
+      "difference_arcsec": 5.94936,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "neptune",
+      "coordinate": "longitude",
+      "reference": 1.8434385,
+      "actual": 1.846817,
+      "difference_arcsec": 12.1626,
+      "passed": true
+    },
+    {
+      "date": "2026-11-14T03:00:00Z",
+      "body": "neptune",
+      "coordinate": "latitude",
+      "reference": -1.4084899,
+      "actual": -1.405838,
+      "difference_arcsec": 9.54684,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "sun",
+      "coordinate": "longitude",
+      "reference": 331.2367942,
+      "actual": 331.236742,
+      "difference_arcsec": 0.18792,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "sun",
+      "coordinate": "latitude",
+      "reference": 0.0000374,
+      "actual": 0.00007,
+      "difference_arcsec": 0.11736,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "moon",
+      "coordinate": "longitude",
+      "reference": 139.5217443,
+      "actual": 139.522935,
+      "difference_arcsec": 4.28652,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "moon",
+      "coordinate": "latitude",
+      "reference": 0.0961382,
+      "actual": 0.095729,
+      "difference_arcsec": 1.47312,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "mercury",
+      "coordinate": "longitude",
+      "reference": 328.1729294,
+      "actual": 328.174503,
+      "difference_arcsec": 5.66496,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "mercury",
+      "coordinate": "latitude",
+      "reference": 3.713327,
+      "actual": 3.712678,
+      "difference_arcsec": 2.3364,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "venus",
+      "coordinate": "longitude",
+      "reference": 289.1945768,
+      "actual": 289.19461,
+      "difference_arcsec": 0.11952,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "venus",
+      "coordinate": "latitude",
+      "reference": 1.3422203,
+      "actual": 1.342444,
+      "difference_arcsec": 0.80532,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "mars",
+      "coordinate": "longitude",
+      "reference": 150.5834774,
+      "actual": 150.584229,
+      "difference_arcsec": 2.70576,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "mars",
+      "coordinate": "latitude",
+      "reference": 4.4603971,
+      "actual": 4.460461,
+      "difference_arcsec": 0.23004,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "jupiter",
+      "coordinate": "longitude",
+      "reference": 140.8450893,
+      "actual": 140.845015,
+      "difference_arcsec": 0.26748,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "jupiter",
+      "coordinate": "latitude",
+      "reference": 1.0660895,
+      "actual": 1.065356,
+      "difference_arcsec": 2.6406,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "saturn",
+      "coordinate": "longitude",
+      "reference": 12.1053734,
+      "actual": 12.102851,
+      "difference_arcsec": 9.08064,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "saturn",
+      "coordinate": "latitude",
+      "reference": -2.2863943,
+      "actual": -2.285345,
+      "difference_arcsec": 3.77748,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "uranus",
+      "coordinate": "longitude",
+      "reference": 61.7428431,
+      "actual": 61.742661,
+      "difference_arcsec": 0.65556,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "uranus",
+      "coordinate": "latitude",
+      "reference": -0.1276165,
+      "actual": -0.125951,
+      "difference_arcsec": 5.9958,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "neptune",
+      "coordinate": "longitude",
+      "reference": 2.8901801,
+      "actual": 2.893319,
+      "difference_arcsec": 11.30004,
+      "passed": true
+    },
+    {
+      "date": "2027-02-20T03:00:00Z",
+      "body": "neptune",
+      "coordinate": "latitude",
+      "reference": -1.3515009,
+      "actual": -1.348996,
+      "difference_arcsec": 9.01764,
+      "passed": true
+    }
+  ],
+  "notes": [
+    "比較対象はJPL Horizonsの地心・見かけの黄道座標です。",
+    "JPLとAstronomy Engineでは補正モデルが異なるため、差は純粋な計算誤差を意味しません。",
+    "60秒角はプロジェクト独自の合格基準です。",
+    "2026-06-14は経度のみを検証しています。"
+  ]
+}
