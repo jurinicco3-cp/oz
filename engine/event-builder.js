@@ -1,10 +1,12 @@
+
 /**
  * event-builder.js
  *
  * 天体計算エンジンの結果から、
  * 運勢評価に使用する共通イベントを作成する。
  *
- * この段階では運勢の良し悪しは判定しない。
+ * 複数回発生するアスペクトは、
+ * それぞれ別のイベントとして登録する。
  */
 
 export function buildEvents(aspects) {
@@ -12,7 +14,10 @@ export function buildEvents(aspects) {
     throw new TypeError("aspects must be an array");
   }
 
-  return aspects.map((aspect, index) => {
+  const result = [];
+  let eventNumber = 1;
+
+  aspects.forEach((aspect, index) => {
     const {
       planetA,
       planetB,
@@ -40,14 +45,31 @@ export function buildEvents(aspects) {
       );
     }
 
-    return {
-      id: `event-${index + 1}`,
-      planetA,
-      planetB,
-      aspectType,
-      exactTime: exactTime ?? null,
-      orb,
-      applying
-    };
+    const exactEvents =
+      Array.isArray(aspect.exactEvents) &&
+      aspect.exactEvents.length > 0
+        ? aspect.exactEvents
+        : [{ exactTime, orb }];
+
+    exactEvents.forEach((occurrence, occurrenceIndex) => {
+      const eventOrb =
+        typeof occurrence.orb === "number"
+          ? occurrence.orb
+          : orb;
+
+      result.push({
+        id: `event-${eventNumber++}`,
+        planetA,
+        planetB,
+        aspectType,
+        exactTime: occurrence.exactTime ?? null,
+        orb: eventOrb,
+        applying,
+        occurrenceIndex: occurrenceIndex + 1,
+        occurrenceCount: exactEvents.length
+      });
+    });
   });
+
+  return result;
 }
