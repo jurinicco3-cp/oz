@@ -117,6 +117,17 @@
 
   <h2>JSON出力</h2>
   <pre id="raw">未実行</pre>
+  <h2>天体位置・自動回帰テスト</h2>
+
+<button id="regression-test">
+  自動回帰テストを実行
+</button>
+
+<div id="regression-status">
+  未実行
+</div>
+
+<pre id="regression-result">未実行</pre>
   <h2>水星の逆行・再通過テスト結果</h2>
 <div id="retrograde-status">未実行</div>
 <pre id="retrograde-result">未実行</pre>
@@ -125,6 +136,7 @@
   <script src="./engine/position-calculator.js"></script>
   <script src="./engine/mercury-retrograde-test.js"></script>
   <script src="./engine/mercury-retrograde-verification.js"></script>
+  <script src="./engine/position-regression-test.js"></script>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -278,6 +290,30 @@
 
   } catch (error) {
     $("retrograde-status").textContent =
+      "エラー：" + error.message;
+
+    console.error(error);
+  }
+});
+    $("regression-test").addEventListener("click", () => {
+  $("regression-status").textContent =
+    "自動回帰テストを実行しています...";
+
+  $("regression-result").textContent = "";
+
+  try {
+    const report = PositionRegressionTest.runTest();
+
+    $("regression-status").textContent =
+      report.overall_result === "ALL_PASS"
+        ? `全テスト合格！ ${report.passed}/${report.total_tests}`
+        : `テスト失敗： ${report.failed}件`;
+
+    $("regression-result").textContent =
+      JSON.stringify(report, null, 2);
+
+  } catch (error) {
+    $("regression-status").textContent =
       "エラー：" + error.message;
 
     console.error(error);
