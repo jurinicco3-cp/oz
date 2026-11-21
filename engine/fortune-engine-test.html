@@ -104,15 +104,6 @@
               detected.aspectType
             );
 
-            aspects.push({
-              planetA,
-              planetB,
-              aspectType: detected.aspectType,
-              exactTime: null,
-              orb: detected.orb,
-              applying
-            });
-
             const searchResult =
               window.AspectDetector.findExactAspectTime(
                 now,
@@ -123,8 +114,18 @@
                 calculatePositions,
                 60
               );
-
+            
+            aspects.push({
+              planetA,
+              planetB,
+              aspectType: detected.aspectType,
+              exactTime: searchResult.exactTime,
+              orb: detected.orb,
+              applying
+            });
+            
             exactAspectSearches.push(searchResult);
+            
           }
         }
 
