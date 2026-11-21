@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -34,7 +35,7 @@
 
   <h1>占星術エンジン動作テスト</h1>
 
-  <p>天体位置・アスペクト・接近と分離の判定を確認します。</p>
+  <p>天体位置・アスペクト・接近分離・正確な時刻の探索を確認します。</p>
 
   <button id="run-test">テストを実行</button>
 
@@ -57,20 +58,25 @@
         const now = new Date();
 
         const future = new Date(
-          now.getTime() + 1 * 60 * 60 * 1000
+          now.getTime() + 60 * 60 * 1000
         );
 
-        const currentPositions =
-          window.PositionCalculator.calculatePositions(now);
+        const searchEnd = new Date(
+          now.getTime() + 7 * 24 * 60 * 60 * 1000
+        );
 
-        const futurePositions =
-          window.PositionCalculator.calculatePositions(future);
+        const calculatePositions = date =>
+          window.PositionCalculator.calculatePositions(date);
+
+        const currentPositions = calculatePositions(now);
+        const futurePositions = calculatePositions(future);
 
         const currentPlanets = currentPositions.planets;
         const futurePlanets = futurePositions.planets;
 
         const planetNames = Object.keys(currentPlanets);
         const aspects = [];
+        const exactAspectSearches = [];
 
         for (let i = 0; i < planetNames.length; i++) {
           for (let j = i + 1; j < planetNames.length; j++) {
@@ -79,6 +85,7 @@
 
             const currentA = currentPlanets[planetA].longitude;
             const currentB = currentPlanets[planetB].longitude;
+
             const futureA = futurePlanets[planetA].longitude;
             const futureB = futurePlanets[planetB].longitude;
 
@@ -105,6 +112,19 @@
               orb: detected.orb,
               applying
             });
+
+            const searchResult =
+              window.AspectDetector.findExactAspectTime(
+                now,
+                searchEnd,
+                planetA,
+                planetB,
+                detected.aspectType,
+                calculatePositions,
+                60
+              );
+
+            exactAspectSearches.push(searchResult);
           }
         }
 
@@ -115,7 +135,7 @@
 
         result.textContent = JSON.stringify({
           currentDate: currentPositions.datetime,
-          futureDate: futurePositions.datetime,
+          searchEnd: searchEnd.toISOString(),
           comparisonHours: 1,
           planetCount: planetNames.length,
           aspectCount: aspects.length,
@@ -128,7 +148,8 @@
           unchangedCount: aspects.filter(
             item => item.applying === null
           ).length,
-          events
+          events,
+          exactAspectSearches
         }, null, 2);
 
       } catch (error) {
