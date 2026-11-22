@@ -48,8 +48,7 @@
   <script src="./aspect-detector.js"></script>
 
   <script type="module">
-    import { buildEvents } from "./event-builder.js";
-    import { buildStates } from "./state-builder.js";
+    import { buildFortuneData } from "./fortune-engine.js";
 
     const status = document.getElementById("status");
     const result = document.getElementById("result");
@@ -131,8 +130,10 @@
           }
         }
 
-        const events = buildEvents(aspects);
-        const states = buildStates(aspects);
+        const fortuneData = buildFortuneData(aspects);
+        
+        const events = fortuneData.events;
+        const states = fortuneData.states;
 
         status.className = "success";
         status.textContent = "テスト成功！";
@@ -152,6 +153,7 @@
           unchangedCount: aspects.filter(
             item => item.applying === null
           ).length,
+          fortuneSummary: fortuneData.summary,
           events,
           states,
           exactAspectSearches
