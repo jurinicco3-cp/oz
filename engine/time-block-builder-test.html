@@ -1,1 +1,156 @@
 
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>時間帯作成テスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    .pass {
+      color: green;
+    }
+
+    .fail {
+      color: red;
+    }
+
+    pre {
+      background: #f4f4f4;
+      padding: 12px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>時間帯作成テスト</h1>
+  <p id="summary">テストを実行しています...</p>
+  <div id="results"></div>
+
+  <script type="module">
+    import { buildTimeBlocks } from "./time-block-builder.js";
+
+    const results = document.getElementById("results");
+    const summary = document.getElementById("summary");
+
+    let passed = 0;
+    let failed = 0;
+
+    function assert(condition, message) {
+      if (!condition) {
+        throw new Error(message);
+      }
+    }
+
+    function test(name, callback) {
+      const item = document.createElement("p");
+
+      try {
+        callback();
+        passed++;
+        item.className = "pass";
+        item.textContent = `PASS: ${name}`;
+      } catch (error) {
+        failed++;
+        item.className = "fail";
+        item.textContent = `FAIL: ${name} - ${error.message}`;
+      }
+
+      results.appendChild(item);
+    }
+
+    const startTime = "2026-11-22T00:00:00+09:00";
+    const endTime = "2026-11-23T00:00:00+09:00";
+
+    // 1. イベント2つで3つの時間帯ができる
+    test(
+      "イベント2つで3つの時間帯が作成される",
+      () => {
+        const events = [
+          {
+            exactTime: "2026-11-22T08:00:00+09:00"
+          },
+          {
+            exactTime: "2026-11-22T16:00:00+09:00"
+          }
+        ];
+
+        const blocks = buildTimeBlocks(events, {
+          startTime,
+          endTime
+        });
+
+        assert(
+          blocks.length === 3,
+          `時間帯の数が3ではありません: ${blocks.length}`
+        );
+      }
+    );
+
+    // 2. 同時刻のイベントを1つの境界にまとめる
+    test(
+      "同時刻のイベントは境界が1つになる",
+      () => {
+        const events = [
+          {
+            exactTime: "2026-11-22T08:00:00+09:00"
+          },
+          {
+            exactTime: "2026-11-22T08:00:00+09:00"
+          }
+        ];
+
+        const blocks = buildTimeBlocks(events, {
+          startTime,
+          endTime,
+          mergeSimultaneousEvents: true
+        });
+
+        assert(
+          blocks.length === 2,
+          `時間帯の数が2ではありません: ${blocks.length}`
+        );
+      }
+    );
+
+    // 3. イベントがない場合も1日分の時間帯を作る
+    test(
+      "イベントがない場合は1つの時間帯になる",
+      () => {
+        const blocks = buildTimeBlocks([], {
+          startTime,
+          endTime
+        });
+
+        assert(
+          blocks.length === 1,
+          `時間帯の数が1ではありません: ${blocks.length}`
+        );
+
+        assert(
+          blocks[0].startTime ===
+            "2026-11-21T15:00:00.000Z",
+          `開始時刻が正しくありません: ${blocks[0].startTime}`
+        );
+
+        assert(
+          blocks[0].endTime ===
+            "2026-11-22T15:00:00.000Z",
+          `終了時刻が正しくありません: ${blocks[0].endTime}`
+        );
+      }
+    );
+
+    summary.textContent =
+      `テスト結果: ${passed + failed}件中 ${passed}件合格、${failed}件失敗`;
+
+    summary.style.fontWeight = "bold";
+  </script>
+</body>
+</html>
