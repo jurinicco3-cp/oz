@@ -1,1 +1,121 @@
 
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ハウス計算テスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    pre {
+      background: #f3f3f3;
+      padding: 16px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>ハウス計算テスト</h1>
+  <p>実際の天体位置を使って、12星座×10天体のハウス判定を確認します。</p>
+
+  <button id="run-test">テストを実行</button>
+  <h2>実行結果</h2>
+  <div id="status">まだ実行されていません。</div>
+  <pre id="result"></pre>
+
+  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script src="./position-calculator.js"></script>
+
+  <script type="module">
+    import { calculateHouse, calculateAllHouses }
+      from "./house-calculator.js";
+
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+
+    document.getElementById("run-test").addEventListener("click", () => {
+      try {
+        const now = new Date();
+
+        const positions =
+          window.PositionCalculator.calculatePositions(now);
+
+        const allHouses = calculateAllHouses(positions);
+
+        const signNames = [
+          "牡羊座", "牡牛座", "双子座", "蟹座",
+          "獅子座", "乙女座", "天秤座", "蠍座",
+          "射手座", "山羊座", "水瓶座", "魚座"
+        ];
+
+        const planetCount = Object.keys(positions.planets).length;
+        const signCount = Object.keys(allHouses).length;
+
+        const checks = [];
+
+        // 12星座すべてに10天体が割り当てられているか
+        for (let i = 0; i < 12; i++) {
+          const planets = allHouses[i].planets;
+
+          checks.push({
+            sign: signNames[i],
+            planetCount: Object.keys(planets).length,
+            allHousesValid: Object.values(planets).every(
+              item => Number.isInteger(item.house) &&
+                item.house >= 1 && item.house <= 12
+            )
+          });
+        }
+
+        // ハウス番号の基本計算を確認
+        const basicChecks = {
+          sameSign: calculateHouse(0, 0) === 1,
+          nextSign: calculateHouse(0, 1) === 2,
+          lastSign: calculateHouse(0, 11) === 12,
+          wrapAround: calculateHouse(11, 0) === 2
+        };
+
+        const allChecksPassed =
+          checks.every(item =>
+            item.planetCount === 10 && item.allHousesValid
+          ) &&
+          Object.values(basicChecks).every(Boolean) &&
+          planetCount === 10 &&
+          signCount === 12;
+
+        status.className = allChecksPassed ? "success" : "error";
+        status.textContent = allChecksPassed
+          ? "テスト成功！"
+          : "一部のテストに失敗しました。";
+
+        result.textContent = JSON.stringify({
+          currentDate: positions.datetime,
+          planetCount,
+          signCount,
+          basicChecks,
+          checks,
+          ariesExample: allHouses[0],
+          allChecksPassed
+        }, null, 2);
+
+      } catch (error) {
+        status.className = "error";
+        status.textContent = "エラーが発生しました。";
+        result.textContent = error.stack || error.message;
+      }
+    });
+  </script>
+</body>
+</html>
