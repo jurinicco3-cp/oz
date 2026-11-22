@@ -48,7 +48,8 @@
   <script src="./aspect-detector.js"></script>
 
   <script type="module">
-    import { buildEvents } from "./event-builder.js";
+    import { buildEvents } from "./engine/event-builder.js";
+    import { buildStates } from "./engine/state-builder.js";
 
     const status = document.getElementById("status");
     const result = document.getElementById("result");
@@ -131,6 +132,7 @@
         }
 
         const events = buildEvents(aspects);
+        const states = buildStates(aspects);
 
         status.className = "success";
         status.textContent = "テスト成功！";
@@ -151,6 +153,7 @@
             item => item.applying === null
           ).length,
           events,
+          states,
           exactAspectSearches
         }, null, 2);
 
