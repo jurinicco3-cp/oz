@@ -243,17 +243,27 @@ export function buildScheduleBase(
       aspectDetector
     );
 
+    // この時間帯に属するイベントだけを取り出す
+    // 境界時刻ちょうどのイベントは、後の時間帯に所属させる
+    const blockEvents = events.filter(event => {
+      const eventTime = new Date(event.exactTime).getTime();
+      const blockStart = new Date(block.startTime).getTime();
+      const blockEnd = new Date(block.endTime).getTime();
+
+      return eventTime >= blockStart && eventTime < blockEnd;
+    });
+
     const fortuneData = buildFortuneData(
       aspects,
       positions,
       configs,
-      events
+      blockEvents
     );
-
     return {
       ...block,
       positions,
       aspects,
+      events: blockEvents,
       fortuneData
     };
   });
