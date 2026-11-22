@@ -1,3 +1,4 @@
+
 import { buildEvents } from "./event-builder.js";
 import { buildStates } from "./state-builder.js";
 import { calculateAllHouses } from "./house-calculator.js";
@@ -6,11 +7,17 @@ import { calculateFortuneScores } from "./fortune-scorer.js";
 /**
  * 占いエンジンの基本データを作成する
  *
- * aspects   : 検出されたアスペクト情報
- * positions : PositionCalculator.calculatePositions() の計算結果
- * configs   : config-loader.js で読み込んだ設定
+ * aspects      : 時間帯ごとのアスペクト情報
+ * positions    : 天体位置の計算結果
+ * configs      : 読み込んだ設定
+ * eventRecords : 正確な成立時刻を持つイベント情報（省略可能）
  */
-export function buildFortuneData(aspects, positions, configs) {
+export function buildFortuneData(
+  aspects,
+  positions,
+  configs,
+  eventRecords = null
+) {
   if (!Array.isArray(aspects)) {
     throw new TypeError("aspects must be an array");
   }
@@ -27,11 +34,21 @@ export function buildFortuneData(aspects, positions, configs) {
     throw new TypeError("Scoring configs are required");
   }
 
+  if (
+    eventRecords !== null &&
+    !Array.isArray(eventRecords)
+  ) {
+    throw new TypeError("eventRecords must be an array or null");
+  }
+
   // 現在の惑星状態を作成
   const states = buildStates(aspects);
 
-  // 正確な成立時刻を持つイベントを作成
-  const events = buildEvents(aspects);
+  // 外部イベントがあればそちらを使用する
+  // 省略された場合は従来どおりアスペクト情報から作成
+  const events = buildEvents(
+    eventRecords === null ? aspects : eventRecords
+  );
 
   // 12星座それぞれのハウス情報を作成
   const houses = calculateAllHouses(positions);
@@ -42,7 +59,7 @@ export function buildFortuneData(aspects, positions, configs) {
     planets: signData.planets
   }));
 
-  // 12星座×4カテゴリのスコアを計算
+  // 12星座×4カテゴリーのスコアを計算
   const scoreData = calculateFortuneScores(
     {
       datetime: positions.datetime || null,
