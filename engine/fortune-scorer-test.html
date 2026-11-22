@@ -374,6 +374,41 @@
           }
         );
 
+                // 8. 惑星の重みが影響度に反映されるか確認
+        test(
+          "惑星の重みを変更すると影響度も変化する",
+          () => {
+            const originalWeight =
+              configs.scoringRules.planet_weights.sun;
+
+            try {
+              const originalScores =
+                calculateFortuneScores(fortuneData, configs);
+
+              const originalInfluence =
+                originalScores.signs[0].categories.overall.influence;
+
+              configs.scoringRules.planet_weights.sun =
+                originalWeight * 2;
+
+              const changedScores =
+                calculateFortuneScores(fortuneData, configs);
+
+              const changedInfluence =
+                changedScores.signs[0].categories.overall.influence;
+
+              assert(
+                changedInfluence > originalInfluence,
+                `太陽の重みを2倍にしましたが、影響度が上昇しませんでした。変更前: ${originalInfluence}、変更後: ${changedInfluence}`
+              );
+
+            } finally {
+              configs.scoringRules.planet_weights.sun =
+                originalWeight;
+            }
+          }
+        );
+
 
         // 8. スコアのサンプルを取得
         const aries = fortuneScores.signs[0];
