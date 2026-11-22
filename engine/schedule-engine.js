@@ -1,5 +1,6 @@
 
 import { buildTimeBlocks } from "./time-block-builder.js";
+import { buildEvents } from "./event-builder.js";
 import { buildFortuneData } from "./fortune-engine.js";
 
 const PLANET_NAMES = [
@@ -15,16 +16,101 @@ const PLANET_NAMES = [
   "pluto"
 ];
 
-const ASPECT_TYPES = [
-  { id: "conjunction", angle: 0, orb: 8 },
-  { id: "sextile", angle: 60, orb: 4 },
-  { id: "square", angle: 90, orb: 6 },
-  { id: "trine", angle: 120, orb: 6 },
-  { id: "opposition", angle: 180, orb: 8 }
-];
+/**
+ * 指定した1日分の正確なアスペクトイベントを探す
+ */
+function findDailyAspectEvents(
+  startTime,
+  endTime,
+  calculatePositions,
+  aspectDetector
+) {
+  const startDate = new Date(startTime);
+  const endDate = new Date(endTime);
+
+  if (
+    !Number.isFinite(startDate.getTime()) ||
+    !Number.isFinite(endDate.getTime()) ||
+    startDate >= endDate
+  ) {
+    throw new TypeError("Invalid daily search period");
+  }
+
+  if (
+    !aspectDetector ||
+    typeof aspectDetector.findExactAspectTime !== "function" ||
+    !Array.isArray(aspectDetector.aspects)
+  ) {
+    throw new TypeError("Valid aspectDetector is required");
+  }
+
+  // 同じ日時の天体位置を何度も計算しないようにする
+  const positionCache = new Map();
+
+  const cachedCalculatePositions = date => {
+    const timestamp = date.getTime();
+
+    if (!Number.isFinite(timestamp)) {
+      throw new TypeError("Invalid calculation date");
+    }
+
+    if (!positionCache.has(timestamp)) {
+      positionCache.set(
+        timestamp,
+        calculatePositions(date)
+      );
+    }
+
+    return positionCache.get(timestamp);
+  };
+
+  const aspectRecords = [];
+
+  // 10天体の45通りの組み合わせを調べる
+  for (let i = 0; i < PLANET_NAMES.length; i++) {
+    for (let j = i + 1; j < PLANET_NAMES.length; j++) {
+      const planetA = PLANET_NAMES[i];
+      const planetB = PLANET_NAMES[j];
+
+      // 5種類のアスペクトを調べる
+      for (const aspect of aspectDetector.aspects) {
+        const searchResult =
+          aspectDetector.findExactAspectTime(
+            startDate,
+            endDate,
+            planetA,
+            planetB,
+            aspect.type,
+            cachedCalculatePositions,
+            30
+          );
+
+        if (!searchResult.found) {
+          continue;
+        }
+
+        aspectRecords.push({
+          planetA,
+          planetB,
+          aspectType: aspect.type,
+          orb: searchResult.orb,
+          exactEvents: searchResult.events
+        });
+      }
+    }
+  }
+
+  // 正確なイベント時刻を整理する
+  const events = buildEvents(aspectRecords);
+
+  return {
+    events,
+    calculationCount: positionCache.size
+  };
+}
 
 /**
- * 10天体の全組み合わせからアスペクトを検出する
+ * 時間帯ごとにアスペクトを検出する
  */
 function detectAllAspects(
   positions,
@@ -59,12 +145,6 @@ function detectAllAspects(
 
       if (!detected) continue;
 
-      const aspectConfig = ASPECT_TYPES.find(
-        item => item.id === detected.aspectType
-      );
-
-      if (!aspectConfig) continue;
-
       const applying = aspectDetector.detectApplying(
         currentA.longitude,
         currentB.longitude,
@@ -72,6 +152,9 @@ function detectAllAspects(
         futureB.longitude,
         detected.aspectType
       );
+
+      // 接近・分離を判定できない場合はスコア計算から除外
+      if (applying === null) continue;
 
       aspects.push({
         planetA,
@@ -87,21 +170,17 @@ function detectAllAspects(
 }
 
 /**
- * 時間帯別スケジュールを作成する
+ * 1日分の時間帯別スケジュールを作成する
  *
- * calculatePositions:
- * 指定日時の10天体位置を計算する関数
+ * startTime:
+ * 1日の開始日時（日本時間の午前0時）
  *
- * aspectDetector:
- * AspectDetector
- *
- * configs:
- * 読み込み済みの設定データ
+ * endTime:
+ * 翌日の開始日時（日本時間の午前0時）
  */
 export function buildScheduleBase(
   startTime,
   endTime,
-  events,
   calculatePositions,
   aspectDetector,
   configs
@@ -112,33 +191,37 @@ export function buildScheduleBase(
     );
   }
 
-  if (
-    !aspectDetector ||
-    typeof aspectDetector.detectAspect !== "function" ||
-    typeof aspectDetector.detectApplying !== "function"
-  ) {
-    throw new TypeError(
-      "Valid aspectDetector is required"
-    );
-  }
-
   if (!configs) {
     throw new TypeError("configs are required");
   }
 
+  // 1日分の実際の天体イベントを検索
+  const eventData = findDailyAspectEvents(
+    startTime,
+    endTime,
+    calculatePositions,
+    aspectDetector
+  );
+
+  const events = eventData.events;
+
+  // 実際のイベント時刻で1日を分割
   const blocks = buildTimeBlocks(events, {
     startTime,
     endTime,
     mergeSimultaneousEvents: true
   });
 
+  // 各時間帯の運勢データを計算
   const scheduledBlocks = blocks.map(block => {
     const midpointDate = new Date(block.midpoint);
 
     const positions = calculatePositions(midpointDate);
 
     const futurePositions = calculatePositions(
-      new Date(midpointDate.getTime() + 60 * 60 * 1000)
+      new Date(
+        midpointDate.getTime() + 60 * 60 * 1000
+      )
     );
 
     if (
@@ -177,6 +260,9 @@ export function buildScheduleBase(
   return {
     startTime: new Date(startTime).toISOString(),
     endTime: new Date(endTime).toISOString(),
+    eventCount: events.length,
+    positionCalculationCount: eventData.calculationCount,
+    events,
     blockCount: scheduledBlocks.length,
     blocks: scheduledBlocks
   };
