@@ -155,27 +155,41 @@
         });
 
         // 11. イベントが正しい時間帯に振り分けられる
-        const eventIntegrationCheck =
-          schedule.blocks.every(block =>
-            block.events.length === block.fortuneData.events.length &&
-            block.events.length === block.fortuneData.summary.eventCount &&
-            block.events.every((event, index) =>
-              event.id === block.fortuneData.events[index].id
-            )
-          ) &&
-          schedule.blocks.reduce(
-            (total, block) => total + block.events.length,
-            0
-          ) === schedule.eventCount;
+        
+// 11. イベントが正しい時間帯に振り分けられる
+const eventIntegrationCheck =
+  schedule.blocks.every(block => {
+    const blockEvents = block.events;
+    const fortuneEvents = block.fortuneData.events;
 
-        checks.push({
-          name: "イベントが正しい時間帯に振り分けられる",
-          passed: eventIntegrationCheck,
-          actual: schedule.blocks.map(block => ({
-            block: block.id,
-            eventCount: block.events.length
-          }))
-        });
+    return (
+      blockEvents.length === fortuneEvents.length &&
+      blockEvents.length === block.fortuneData.summary.eventCount &&
+      blockEvents.every((event, index) => {
+        const fortuneEvent = fortuneEvents[index];
+
+        return (
+          event.planetA === fortuneEvent.planetA &&
+          event.planetB === fortuneEvent.planetB &&
+          event.aspectType === fortuneEvent.aspectType &&
+          event.exactTime === fortuneEvent.exactTime
+        );
+      })
+    );
+  }) &&
+  schedule.blocks.reduce(
+    (total, block) => total + block.events.length,
+    0
+  ) === schedule.eventCount;
+
+checks.push({
+  name: "イベントが正しい時間帯に振り分けられる",
+  passed: eventIntegrationCheck,
+  actual: schedule.blocks.map(block => ({
+    block: block.id,
+    eventCount: block.events.length
+  }))
+});
 
         const passedCount = checks.filter(check => check.passed).length;
 
