@@ -36,8 +36,8 @@
   <h1>時間帯別スケジュール総合テスト</h1>
 
   <p>
-    天体位置、アスペクト、12星座の運勢スコアが
-    時間帯ごとに計算できるか確認します。
+    日本時間の1日を対象に、天体イベントの自動検出、
+    時間帯の分割、12星座の運勢計算を確認します。
   </p>
 
   <button id="run-test">テストを実行</button>
@@ -68,22 +68,15 @@
         const startTime = "2026-11-22T00:00:00+09:00";
         const endTime = "2026-11-23T00:00:00+09:00";
 
-        const events = [
-          {
-            exactTime: "2026-11-22T08:00:00+09:00"
-          },
-          {
-            exactTime: "2026-11-22T16:00:00+09:00"
-          }
-        ];
-
         const calculatePositions = date =>
           window.PositionCalculator.calculatePositions(date);
+
+        status.textContent =
+          "天体イベントを検索してスケジュールを計算しています...";
 
         const schedule = buildScheduleBase(
           startTime,
           endTime,
-          events,
           calculatePositions,
           window.AspectDetector,
           configs
@@ -91,14 +84,69 @@
 
         const checks = [];
 
-        // 1. 時間帯が3つ作成される
+        // 1. 指定した日本時間の1日が設定されている
         checks.push({
-          name: "時間帯が3つ作成される",
-          passed: schedule.blockCount === 3,
-          actual: schedule.blockCount
+          name: "日本時間の1日が正しく設定される",
+          passed:
+            schedule.startTime ===
+              "2026-11-21T15:00:00.000Z" &&
+            schedule.endTime ===
+              "2026-11-22T15:00:00.000Z"
         });
 
-        // 2. 各時間帯で10天体が取得できる
+        // 2. イベントが配列として作成される
+        checks.push({
+          name: "天体イベントが配列として作成される",
+          passed: Array.isArray(schedule.events)
+        });
+
+        // 3. イベントの時刻と天体情報が正しい
+        const eventCheck = schedule.events.every(event =>
+          typeof event.planetA === "string" &&
+          typeof event.planetB === "string" &&
+          typeof event.aspectType === "string" &&
+          typeof event.exactTime === "string" &&
+          typeof event.orb === "number" &&
+          Number.isFinite(new Date(event.exactTime).getTime())
+        );
+
+        checks.push({
+          name: "イベントの情報と発生時刻が正しい",
+          passed: eventCheck
+        });
+
+        // 4. 時間帯が1つ以上作成される
+        checks.push({
+          name: "時間帯が1つ以上作成される",
+          passed:
+            schedule.blockCount > 0 &&
+            schedule.blockCount === schedule.blocks.length
+        });
+
+        // 5. 時間帯の開始・終了が連続している
+        const boundaryCheck = schedule.blocks.every(
+          (block, index) => {
+            if (index === 0) {
+              return block.startTime === schedule.startTime;
+            }
+
+            return (
+              block.startTime ===
+              schedule.blocks[index - 1].endTime
+            );
+          }
+        );
+
+        checks.push({
+          name: "時間帯の境界が連続している",
+          passed:
+            boundaryCheck &&
+            schedule.blocks[
+              schedule.blocks.length - 1
+            ].endTime === schedule.endTime
+        });
+
+        // 6. 各時間帯で10天体が取得できる
         const planetCheck = schedule.blocks.every(
           block =>
             block.positions &&
@@ -110,7 +158,7 @@
           passed: planetCheck
         });
 
-        // 3. アスペクトが配列として作成される
+        // 7. アスペクト情報が正しい形式で作成される
         const aspectCheck = schedule.blocks.every(
           block =>
             Array.isArray(block.aspects) &&
@@ -125,11 +173,11 @@
         );
 
         checks.push({
-          name: "アスペクトが正しい形式で検出される",
+          name: "時間帯ごとのアスペクト情報が正しい",
           passed: aspectCheck
         });
 
-        // 4. 12星座分のスコアが作成される
+        // 8. 12星座分のスコアが作成される
         const scoreCheck = schedule.blocks.every(
           block =>
             block.fortuneData &&
@@ -142,7 +190,7 @@
           passed: scoreCheck
         });
 
-        // 5. 4カテゴリー分のスコアが作成される
+        // 9. 4カテゴリー分のスコアが作成される
         const categoryCheck = schedule.blocks.every(
           block =>
             block.fortuneData.summary.scoreCategoryCount === 4
@@ -151,6 +199,14 @@
         checks.push({
           name: "各時間帯で4カテゴリーのスコアが作成される",
           passed: categoryCheck
+        });
+
+        // 10. 天体位置の計算回数が記録される
+        checks.push({
+          name: "天体位置の計算回数が記録される",
+          passed:
+            Number.isInteger(schedule.positionCalculationCount) &&
+            schedule.positionCalculationCount > 0
         });
 
         const passed = checks.filter(
@@ -171,7 +227,11 @@
           schedule: {
             startTime: schedule.startTime,
             endTime: schedule.endTime,
+            eventCount: schedule.eventCount,
+            positionCalculationCount:
+              schedule.positionCalculationCount,
             blockCount: schedule.blockCount,
+            events: schedule.events,
             blocks: schedule.blocks.map(block => ({
               id: block.id,
               startTime: block.startTime,
@@ -181,7 +241,6 @@
                 block.positions.planets
               ).length,
               aspectCount: block.aspects.length,
-              aspects: block.aspects,
               fortuneSummary: block.fortuneData.summary,
               firstSignScores: block.fortuneData.scores[0]
             }))
