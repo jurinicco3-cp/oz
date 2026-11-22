@@ -209,6 +209,19 @@
             schedule.positionCalculationCount > 0
         });
 
+        // 11. 検出されたイベントが運勢データにも反映される
+        const eventIntegrationCheck = schedule.blocks.every(
+          block =>
+            block.fortuneData &&
+            block.fortuneData.events.length === schedule.eventCount &&
+            block.fortuneData.summary.eventCount === schedule.eventCount
+        );
+        
+        checks.push({
+          name: "検出されたイベントが運勢データにも反映される",
+          passed: eventIntegrationCheck
+        });
+
         const passed = checks.filter(
           item => item.passed
         ).length;
