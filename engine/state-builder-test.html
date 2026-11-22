@@ -133,14 +133,15 @@
           throw new Error("不正データの検証に失敗しました");
         }
 
-        status.className = "success";
+                status.className = "success";
         status.textContent = "テスト成功！すべての確認項目に合格しました。";
 
-        testCount: 4 + invalidTests.length,
-        passed: 4 + invalidPassed,
-        failed: invalidTests.length - invalidPassed,
-        states,
-        invalidResults
+        result.textContent = JSON.stringify({
+          testCount: 4 + invalidTests.length,
+          passed: 4 + invalidPassed,
+          failed: invalidTests.length - invalidPassed,
+          states,
+          invalidResults
         }, null, 2);
 
       } catch (error) {
