@@ -409,7 +409,40 @@
           }
         );
 
+        // 9. 最大オーブでは影響度が0になるか確認
+test(
+  "最大オーブのアスペクトは影響度に加算されない",
+  () => {
+    const testData = {
+      ...fortuneData,
+      states: fortuneData.states.map(state => {
+        const aspect = configs.aspects.aspects.find(
+          item => item.id === state.aspectType
+        );
 
+        return {
+          ...state,
+          orb: aspect.orb
+        };
+      })
+    };
+
+    const result = calculateFortuneScores(
+      testData,
+      configs
+    );
+
+    result.signs.forEach(sign => {
+      Object.values(sign.categories).forEach(category => {
+        assert(
+          category.influence === 0,
+          `${sign.signName}の${category}の影響度が0ではありません`
+        );
+      });
+    });
+  }
+);
+        
         // 8. スコアのサンプルを取得
         const aries = fortuneScores.signs[0];
 
