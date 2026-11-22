@@ -36,7 +36,6 @@ function getAspectOrb(aspectType, configs) {
     return aspectSettings.orb;
   }
 
-  // 設定が見つからない場合の初期値
   const defaults = {
     conjunction: 8,
     sextile: 4,
@@ -177,7 +176,6 @@ function getAspectNature(aspectType, rules) {
 /**
  * 1つの星座・1つのカテゴリのスコアを計算する
  */
-
 export function calculateCategoryScore(
   states,
   housePlanets,
@@ -241,28 +239,6 @@ export function calculateCategoryScore(
     }
   }
 
-  const influence =
-    maximumInfluence > 0
-      ? (totalInfluence / maximumInfluence) * 100
-      : 0;
-
-  const favorability =
-    totalInfluence > 0
-      ? scoreRange.neutral +
-        (favorabilityTotal / totalInfluence) * 20
-      : scoreRange.neutral;
-
-  return {
-    influence: roundScore(
-      clamp(influence, scoreRange.min, scoreRange.max)
-    ),
-    favorability: roundScore(
-      clamp(favorability, scoreRange.min, scoreRange.max)
-    ),
-    aspectCount: contributingAspectCount
-  };
-}
-
   // 影響度：最大値を100とする
   const influence =
     maximumInfluence > 0
@@ -283,7 +259,7 @@ export function calculateCategoryScore(
     favorability: roundScore(
       clamp(favorability, scoreRange.min, scoreRange.max)
     ),
-    aspectCount: states.length
+    aspectCount: contributingAspectCount
   };
 }
 
