@@ -100,7 +100,7 @@
     "separating_multiplier": 0.8,
     "use_orb_decay": true,
     "decay_method": "linear",
-    "minimum_influence": 0.05,
+    "minimum_influence": 0,
     "note": "アスペクトの正確な成立時刻を中心に影響度を評価する。オーブ内でも成立前と成立後で影響を区別する。"
   },
 
