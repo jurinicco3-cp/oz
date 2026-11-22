@@ -177,6 +177,7 @@ function getAspectNature(aspectType, rules) {
 /**
  * 1つの星座・1つのカテゴリのスコアを計算する
  */
+
 export function calculateCategoryScore(
   states,
   housePlanets,
@@ -197,9 +198,11 @@ export function calculateCategoryScore(
   let totalInfluence = 0;
   let maximumInfluence = 0;
   let favorabilityTotal = 0;
+  let contributingAspectCount = 0;
 
   for (const state of states) {
     const planets = [state.planetA, state.planetB];
+    let stateContributed = false;
 
     for (const planet of planets) {
       const planetHouse = housePlanets[planet];
@@ -228,8 +231,37 @@ export function calculateCategoryScore(
 
       favorabilityTotal +=
         weight * getAspectNature(state.aspectType, rules);
+
+      stateContributed = true;
+    }
+
+    // このカテゴリに実際に影響したアスペクトだけ数える
+    if (stateContributed) {
+      contributingAspectCount++;
     }
   }
+
+  const influence =
+    maximumInfluence > 0
+      ? (totalInfluence / maximumInfluence) * 100
+      : 0;
+
+  const favorability =
+    totalInfluence > 0
+      ? scoreRange.neutral +
+        (favorabilityTotal / totalInfluence) * 20
+      : scoreRange.neutral;
+
+  return {
+    influence: roundScore(
+      clamp(influence, scoreRange.min, scoreRange.max)
+    ),
+    favorability: roundScore(
+      clamp(favorability, scoreRange.min, scoreRange.max)
+    ),
+    aspectCount: contributingAspectCount
+  };
+}
 
   // 影響度：最大値を100とする
   const influence =
