@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>占星術エンジン動作テスト</title>
+  <title>占星術エンジン統合テスト</title>
   <style>
     body {
       font-family: sans-serif;
@@ -33,9 +33,8 @@
 </head>
 <body>
 
-  <h1>占星術エンジン動作テスト</h1>
-
-  <p>天体位置・アスペクト・接近分離・正確な時刻の探索を確認します。</p>
+  <h1>占星術エンジン統合テスト</h1>
+  <p>天体位置・アスペクト・イベント・状態・12星座のハウス情報を確認します。</p>
 
   <button id="run-test">テストを実行</button>
 
@@ -114,7 +113,7 @@
                 calculatePositions,
                 60
               );
-            
+
             aspects.push({
               planetA,
               planetB,
@@ -124,38 +123,61 @@
               orb: detected.orb,
               applying
             });
-            
+
             exactAspectSearches.push(searchResult);
-            
           }
         }
 
-        const fortuneData = buildFortuneData(aspects, currentPositions);
-        
-        const events = fortuneData.events;
-        const states = fortuneData.states;
+        const fortuneData = buildFortuneData(
+          aspects,
+          currentPositions
+        );
 
-        status.className = "success";
-        status.textContent = "テスト成功！";
+        const signNames = [
+          "牡羊座", "牡牛座", "双子座", "蟹座",
+          "獅子座", "乙女座", "天秤座", "蠍座",
+          "射手座", "山羊座", "水瓶座", "魚座"
+        ];
+
+        const houseChecks = signNames.map((name, index) => {
+          const signData = fortuneData.houses[index];
+          const planets = signData.planets;
+
+          return {
+            sign: name,
+            planetCount: Object.keys(planets).length,
+            allHousesValid: Object.values(planets).every(
+              item =>
+                Number.isInteger(item.house) &&
+                item.house >= 1 &&
+                item.house <= 12
+            )
+          };
+        });
+
+        const checksPassed =
+          fortuneData.summary.signCount === 12 &&
+          fortuneData.summary.planetCount === 10 &&
+          houseChecks.every(
+            item => item.planetCount === 10 && item.allHousesValid
+          );
+
+        status.className = checksPassed ? "success" : "error";
+        status.textContent = checksPassed
+          ? "統合テスト成功！"
+          : "一部の確認に失敗しました。";
 
         result.textContent = JSON.stringify({
-          currentDate: currentPositions.datetime,
-          searchEnd: searchEnd.toISOString(),
-          comparisonHours: 1,
-          planetCount: planetNames.length,
-          aspectCount: aspects.length,
-          applyingCount: aspects.filter(
-            item => item.applying === true
-          ).length,
-          separatingCount: aspects.filter(
-            item => item.applying === false
-          ).length,
-          unchangedCount: aspects.filter(
-            item => item.applying === null
-          ).length,
+          currentDate: fortuneData.datetime,
           fortuneSummary: fortuneData.summary,
-          events,
-          states,
+          stateCount: fortuneData.states.length,
+          eventCount: fortuneData.events.length,
+          signCount: fortuneData.summary.signCount,
+          planetCount: fortuneData.summary.planetCount,
+          houseChecks,
+          ariesExample: fortuneData.houses[0],
+          events: fortuneData.events,
+          states: fortuneData.states,
           exactAspectSearches
         }, null, 2);
 
