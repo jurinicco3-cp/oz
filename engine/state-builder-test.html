@@ -1,1 +1,108 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>現在状態データのテスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    pre {
+      background: #f3f3f3;
+      padding: 16px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+  <h1>現在状態データのテスト</h1>
+
+  <p>接近・分離、オーブ、アスペクトの記録を確認します。</p>
+
+  <button id="run-test">テストを実行</button>
+
+  <h2>実行結果</h2>
+  <div id="status">まだ実行されていません。</div>
+  <pre id="result"></pre>
+
+  <script type="module">
+    import { buildStates } from "./state-builder.js";
+
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+
+    document.getElementById("run-test").addEventListener("click", () => {
+      try {
+        const testAspects = [
+          {
+            planetA: "sun",
+            planetB: "mars",
+            aspectType: "square",
+            orb: 1.5,
+            applying: true
+          },
+          {
+            planetA: "moon",
+            planetB: "venus",
+            aspectType: "opposition",
+            orb: 2.3,
+            applying: false
+          }
+        ];
+
+        const states = buildStates(testAspects);
+
+        if (states.length !== 2) {
+          throw new Error("状態データの件数が一致しません");
+        }
+
+        if (states[0].motion !== "applying") {
+          throw new Error("接近判定が正しくありません");
+        }
+
+        if (states[1].motion !== "separating") {
+          throw new Error("分離判定が正しくありません");
+        }
+
+        if (states[0].orb !== 1.5 || states[1].orb !== 2.3) {
+          throw new Error("オーブが正しく記録されていません");
+        }
+
+        status.className = "success";
+        status.textContent = "テスト成功！すべての確認項目に合格しました。";
+
+        result.textContent = JSON.stringify({
+          testCount: 4,
+          passed: 4,
+          failed: 0,
+          states
+        }, null, 2);
+
+      } catch (error) {
+        status.className = "error";
+        status.textContent = "テスト失敗";
+        result.textContent = error.stack || error.message;
+      }
+    });
+  </script>
+
+</body>
+</html>
