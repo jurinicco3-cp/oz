@@ -1,1 +1,156 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>時間帯別スケジュールテスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    pre {
+      background: #f3f3f3;
+      padding: 16px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+  <h1>時間帯別スケジュールテスト</h1>
+  <p>時間帯の分割と、各時間帯の中央時刻における10天体の位置計算を確認します。</p>
+
+  <button id="run-test">テストを実行</button>
+
+  <h2>実行結果</h2>
+  <div id="status">まだ実行されていません。</div>
+  <pre id="result"></pre>
+
+  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script src="./position-calculator.js"></script>
+
+  <script type="module">
+    import { buildScheduleBase } from "./schedule-engine.js";
+
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+
+    document.getElementById("run-test").addEventListener("click", () => {
+      try {
+        status.className = "";
+        status.textContent = "計算中...";
+        result.textContent = "";
+
+        const startTime = "2026-11-22T00:00:00+09:00";
+        const endTime = "2026-11-23T00:00:00+09:00";
+
+        const events = [
+          {
+            exactTime: "2026-11-22T08:00:00+09:00"
+          },
+          {
+            exactTime: "2026-11-22T16:00:00+09:00"
+          }
+        ];
+
+        const calculatePositions = date =>
+          window.PositionCalculator.calculatePositions(date);
+
+        const schedule = buildScheduleBase(
+          startTime,
+          endTime,
+          events,
+          calculatePositions
+        );
+
+        const checks = [];
+
+        // 1. 時間帯が3つ作成されているか
+        checks.push({
+          name: "イベント2つから3つの時間帯が作成される",
+          passed: schedule.blockCount === 3,
+          actual: schedule.blockCount
+        });
+
+        // 2. 各時間帯に10天体の位置があるか
+        const allPlanetsValid = schedule.blocks.every(
+          block =>
+            block.positions &&
+            Object.keys(block.positions.planets).length === 10
+        );
+
+        checks.push({
+          name: "すべての時間帯で10天体の位置が取得できる",
+          passed: allPlanetsValid
+        });
+
+        // 3. 中央時刻と実際の計算日時が一致するか
+        const allMidpointsValid = schedule.blocks.every(
+          block =>
+            block.midpoint === block.positions.datetime
+        );
+
+        checks.push({
+          name: "中央時刻と天体位置の計算日時が一致する",
+          passed: allMidpointsValid
+        });
+
+        const passed = checks.filter(
+          item => item.passed
+        ).length;
+
+        const failed = checks.length - passed;
+
+        status.className = failed === 0
+          ? "success"
+          : "error";
+
+        status.textContent =
+          `テスト結果: ${checks.length}件中 ${passed}件合格、${failed}件失敗`;
+
+        result.textContent = JSON.stringify({
+          checks,
+          schedule: {
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+            blockCount: schedule.blockCount,
+            blocks: schedule.blocks.map(block => ({
+              id: block.id,
+              startTime: block.startTime,
+              endTime: block.endTime,
+              midpoint: block.midpoint,
+              calculatedDatetime: block.positions.datetime,
+              planetCount: Object.keys(
+                block.positions.planets
+              ).length,
+              planets: block.positions.planets
+            }))
+          }
+        }, null, 2);
+
+      } catch (error) {
+        status.className = "error";
+        status.textContent = "エラーが発生しました。";
+        result.textContent = error.stack || error.message;
+      }
+    });
+  </script>
+
+</body>
+</html>
