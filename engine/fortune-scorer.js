@@ -127,11 +127,6 @@ function calculateAspectInfluence(
         0,
         1
       );
-
-      orbFactor = Math.max(
-        orbFactor,
-        rules.event_influence.minimum_influence
-      );
     }
   }
 
