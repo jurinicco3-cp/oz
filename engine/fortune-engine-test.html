@@ -34,7 +34,7 @@
 <body>
 
   <h1>占星術エンジン統合テスト</h1>
-  <p>天体位置・アスペクト・イベント・状態・12星座のハウス情報を確認します。</p>
+  <p>天体位置・アスペクト・イベント・ハウス・12星座の運勢スコアを確認します。</p>
 
   <button id="run-test">テストを実行</button>
 
@@ -48,12 +48,20 @@
 
   <script type="module">
     import { buildFortuneData } from "./fortune-engine.js";
+    import { loadConfigs } from "./config-loader.js";
 
     const status = document.getElementById("status");
     const result = document.getElementById("result");
 
-    document.getElementById("run-test").addEventListener("click", () => {
+    document.getElementById("run-test").addEventListener("click", async () => {
       try {
+        status.className = "";
+        status.textContent = "計算中...";
+        result.textContent = "";
+
+        // 設定ファイルを読み込む
+        const configs = await loadConfigs();
+
         const now = new Date();
 
         const future = new Date(
@@ -128,9 +136,11 @@
           }
         }
 
+        // 実際の天体配置と設定ファイルから占いデータを作成
         const fortuneData = buildFortuneData(
           aspects,
-          currentPositions
+          currentPositions,
+          configs
         );
 
         const signNames = [
@@ -155,11 +165,40 @@
           };
         });
 
+        // 12星座×4カテゴリのスコアを確認
+        const scoreChecks = fortuneData.scores.map(sign => ({
+          sign: sign.signName,
+          categoryCount: Object.keys(sign.categories).length,
+          categories: Object.keys(sign.categories),
+          allScoresValid: Object.values(sign.categories).every(
+            score =>
+              Number.isFinite(score.influence) &&
+              score.influence >= 0 &&
+              score.influence <= 100 &&
+              Number.isFinite(score.favorability) &&
+              score.favorability >= 0 &&
+              score.favorability <= 100
+          )
+        }));
+
+        const totalScoreCount = fortuneData.scores.reduce(
+          (total, sign) =>
+            total + Object.keys(sign.categories).length,
+          0
+        );
+
         const checksPassed =
           fortuneData.summary.signCount === 12 &&
           fortuneData.summary.planetCount === 10 &&
+          fortuneData.summary.scoreSignCount === 12 &&
+          fortuneData.summary.scoreCategoryCount === 4 &&
+          fortuneData.scores.length === 12 &&
+          totalScoreCount === 48 &&
           houseChecks.every(
             item => item.planetCount === 10 && item.allHousesValid
+          ) &&
+          scoreChecks.every(
+            item => item.categoryCount === 4 && item.allScoresValid
           );
 
         status.className = checksPassed ? "success" : "error";
@@ -170,12 +209,13 @@
         result.textContent = JSON.stringify({
           currentDate: fortuneData.datetime,
           fortuneSummary: fortuneData.summary,
-          stateCount: fortuneData.states.length,
-          eventCount: fortuneData.events.length,
-          signCount: fortuneData.summary.signCount,
-          planetCount: fortuneData.summary.planetCount,
+          totalScoreCount,
           houseChecks,
-          ariesExample: fortuneData.houses[0],
+          scoreChecks,
+          ariesExample: {
+            houses: fortuneData.houses[0],
+            scores: fortuneData.scores[0]
+          },
           events: fortuneData.events,
           states: fortuneData.states,
           exactAspectSearches
