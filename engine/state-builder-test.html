@@ -70,7 +70,7 @@
 
         const states = buildStates(testAspects);
 
-        if (states.length !== 2) {
+                if (states.length !== 2) {
           throw new Error("状態データの件数が一致しません");
         }
 
@@ -84,6 +84,53 @@
 
         if (states[0].orb !== 1.5 || states[1].orb !== 2.3) {
           throw new Error("オーブが正しく記録されていません");
+        }
+
+        // 不正なデータを拒否できるか確認する
+        const invalidTests = [
+          {
+            name: "惑星名がない",
+            data: { planetB: "mars", aspectType: "square", orb: 1, applying: true }
+          },
+          {
+            name: "アスペクトの種類がない",
+            data: { planetA: "sun", planetB: "mars", orb: 1, applying: true }
+          },
+          {
+            name: "オーブがマイナス",
+            data: { planetA: "sun", planetB: "mars", aspectType: "square", orb: -1, applying: true }
+          },
+          {
+            name: "オーブが文字列",
+            data: { planetA: "sun", planetB: "mars", aspectType: "square", orb: "1", applying: true }
+          },
+          {
+            name: "接近・分離の判定がない",
+            data: { planetA: "sun", planetB: "mars", aspectType: "square", orb: 1 }
+          }
+        ];
+
+        const invalidResults = invalidTests.map(test => {
+          try {
+            buildStates([test.data]);
+            return {
+              name: test.name,
+              rejected: false
+            };
+          } catch (error) {
+            return {
+              name: test.name,
+              rejected: true
+            };
+          }
+        });
+
+        const invalidPassed = invalidResults.filter(
+          item => item.rejected
+        ).length;
+
+        if (invalidPassed !== invalidTests.length) {
+          throw new Error("不正データの検証に失敗しました");
         }
 
         status.className = "success";
