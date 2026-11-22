@@ -246,7 +246,8 @@ export function buildScheduleBase(
     const fortuneData = buildFortuneData(
       aspects,
       positions,
-      configs
+      configs,
+      events
     );
 
     return {
