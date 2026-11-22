@@ -1,1 +1,69 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>設定ファイル読み込みテスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    pre {
+      background: #f3f3f3;
+      padding: 16px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>設定ファイル読み込みテスト</h1>
+  <p>6つのJSON設定ファイルを読み込みます。</p>
+
+  <div id="status">確認中...</div>
+  <pre id="result"></pre>
+
+  <script type="module">
+    import { loadConfigs } from "./config-loader.js";
+
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+
+    async function runTest() {
+      try {
+        const configs = await loadConfigs();
+
+        const summary = {
+          signs: configs.signs.signs.length,
+          planets: configs.planets.planets.length,
+          aspects: configs.aspects.aspects.length,
+          houses: configs.houses.houses.length,
+          categories: configs.fortuneCategories.categories.length,
+          scoringRulesLoaded: Boolean(configs.scoringRules)
+        };
+
+        status.className = "success";
+        status.textContent = "設定ファイルの読み込みに成功しました！";
+
+        result.textContent = JSON.stringify(summary, null, 2);
+
+      } catch (error) {
+        status.className = "error";
+        status.textContent = "読み込みエラーが発生しました。";
+        result.textContent = error.stack || error.message;
+      }
+    }
+
+    runTest();
+  </script>
+</body>
+</html>
