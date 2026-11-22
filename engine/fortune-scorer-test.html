@@ -433,13 +433,13 @@ test(
     );
 
     result.signs.forEach(sign => {
-      Object.values(sign.categories).forEach(category => {
-        assert(
-          category.influence === 0,
-          `${sign.signName}の${category}の影響度が0ではありません`
-        );
-      });
-    });
+  Object.entries(sign.categories).forEach(([categoryName, category]) => {
+    assert(
+      category.influence === 0,
+      `${sign.signName}の${categoryName}の影響度が0ではありません。値: ${category.influence}`
+    );
+  });
+});
   }
 );
         
