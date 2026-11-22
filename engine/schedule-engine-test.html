@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>時間帯別スケジュールテスト</title>
+  <title>時間帯別スケジュール総合テスト</title>
   <style>
     body {
       font-family: sans-serif;
-      max-width: 900px;
+      max-width: 950px;
       margin: 40px auto;
       padding: 20px;
       line-height: 1.7;
@@ -33,8 +33,12 @@
 </head>
 <body>
 
-  <h1>時間帯別スケジュールテスト</h1>
-  <p>時間帯の分割と、各時間帯の中央時刻における10天体の位置計算を確認します。</p>
+  <h1>時間帯別スケジュール総合テスト</h1>
+
+  <p>
+    天体位置、アスペクト、12星座の運勢スコアが
+    時間帯ごとに計算できるか確認します。
+  </p>
 
   <button id="run-test">テストを実行</button>
 
@@ -44,18 +48,22 @@
 
   <script src="../astronomy/astronomy.browser.min.js"></script>
   <script src="./position-calculator.js"></script>
+  <script src="./aspect-detector.js"></script>
 
   <script type="module">
     import { buildScheduleBase } from "./schedule-engine.js";
+    import { loadConfigs } from "./config-loader.js";
 
     const status = document.getElementById("status");
     const result = document.getElementById("result");
 
-    document.getElementById("run-test").addEventListener("click", () => {
+    document.getElementById("run-test").addEventListener("click", async () => {
       try {
         status.className = "";
-        status.textContent = "計算中...";
+        status.textContent = "設定ファイルを読み込んでいます...";
         result.textContent = "";
+
+        const configs = await loadConfigs();
 
         const startTime = "2026-11-22T00:00:00+09:00";
         const endTime = "2026-11-23T00:00:00+09:00";
@@ -76,39 +84,73 @@
           startTime,
           endTime,
           events,
-          calculatePositions
+          calculatePositions,
+          window.AspectDetector,
+          configs
         );
 
         const checks = [];
 
-        // 1. 時間帯が3つ作成されているか
+        // 1. 時間帯が3つ作成される
         checks.push({
-          name: "イベント2つから3つの時間帯が作成される",
+          name: "時間帯が3つ作成される",
           passed: schedule.blockCount === 3,
           actual: schedule.blockCount
         });
 
-        // 2. 各時間帯に10天体の位置があるか
-        const allPlanetsValid = schedule.blocks.every(
+        // 2. 各時間帯で10天体が取得できる
+        const planetCheck = schedule.blocks.every(
           block =>
             block.positions &&
             Object.keys(block.positions.planets).length === 10
         );
 
         checks.push({
-          name: "すべての時間帯で10天体の位置が取得できる",
-          passed: allPlanetsValid
+          name: "各時間帯で10天体の位置を取得できる",
+          passed: planetCheck
         });
 
-        // 3. 中央時刻と実際の計算日時が一致するか
-        const allMidpointsValid = schedule.blocks.every(
+        // 3. アスペクトが配列として作成される
+        const aspectCheck = schedule.blocks.every(
           block =>
-            block.midpoint === block.positions.datetime
+            Array.isArray(block.aspects) &&
+            block.aspects.length <= 45 &&
+            block.aspects.every(aspect =>
+              typeof aspect.planetA === "string" &&
+              typeof aspect.planetB === "string" &&
+              typeof aspect.aspectType === "string" &&
+              typeof aspect.orb === "number" &&
+              typeof aspect.applying === "boolean"
+            )
         );
 
         checks.push({
-          name: "中央時刻と天体位置の計算日時が一致する",
-          passed: allMidpointsValid
+          name: "アスペクトが正しい形式で検出される",
+          passed: aspectCheck
+        });
+
+        // 4. 12星座分のスコアが作成される
+        const scoreCheck = schedule.blocks.every(
+          block =>
+            block.fortuneData &&
+            block.fortuneData.summary &&
+            block.fortuneData.summary.scoreSignCount === 12
+        );
+
+        checks.push({
+          name: "各時間帯で12星座分のスコアが作成される",
+          passed: scoreCheck
+        });
+
+        // 5. 4カテゴリー分のスコアが作成される
+        const categoryCheck = schedule.blocks.every(
+          block =>
+            block.fortuneData.summary.scoreCategoryCount === 4
+        );
+
+        checks.push({
+          name: "各時間帯で4カテゴリーのスコアが作成される",
+          passed: categoryCheck
         });
 
         const passed = checks.filter(
@@ -135,11 +177,13 @@
               startTime: block.startTime,
               endTime: block.endTime,
               midpoint: block.midpoint,
-              calculatedDatetime: block.positions.datetime,
               planetCount: Object.keys(
                 block.positions.planets
               ).length,
-              planets: block.positions.planets
+              aspectCount: block.aspects.length,
+              aspects: block.aspects,
+              fortuneSummary: block.fortuneData.summary,
+              firstSignScores: block.fortuneData.scores[0]
             }))
           }
         }, null, 2);
