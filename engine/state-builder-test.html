@@ -136,11 +136,11 @@
         status.className = "success";
         status.textContent = "テスト成功！すべての確認項目に合格しました。";
 
-        result.textContent = JSON.stringify({
-          testCount: 4,
-          passed: 4,
-          failed: 0,
-          states
+        testCount: 4 + invalidTests.length,
+        passed: 4 + invalidPassed,
+        failed: invalidTests.length - invalidPassed,
+        states,
+        invalidResults
         }, null, 2);
 
       } catch (error) {
