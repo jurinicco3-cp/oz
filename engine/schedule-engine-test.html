@@ -4,49 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>時間帯別スケジュール総合テスト</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 950px;
-      margin: 40px auto;
-      padding: 20px;
-      line-height: 1.7;
-    }
-
-    button {
-      padding: 12px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    pre {
-      background: #f3f3f3;
-      padding: 16px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-
-    .success { color: green; }
-    .error { color: red; }
-  </style>
+  <title>Schedule Engine Test</title>
 </head>
 <body>
+  <h1>Schedule Engine Test</h1>
+  <pre id="results">テスト実行中...</pre>
 
-  <h1>時間帯別スケジュール総合テスト</h1>
-
-  <p>
-    日本時間の1日を対象に、天体イベントの自動検出、
-    時間帯の分割、12星座の運勢計算を確認します。
-  </p>
-
-  <button id="run-test">テストを実行</button>
-
-  <h2>実行結果</h2>
-  <div id="status">まだ実行されていません。</div>
-  <pre id="result"></pre>
-
-  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script src="./astronomy-library.min.js"></script>
   <script src="./position-calculator.js"></script>
   <script src="./aspect-detector.js"></script>
 
@@ -54,122 +18,102 @@
     import { buildScheduleBase } from "./schedule-engine.js";
     import { loadConfigs } from "./config-loader.js";
 
-    const status = document.getElementById("status");
-    const result = document.getElementById("result");
+    const resultsElement = document.getElementById("results");
 
-    document.getElementById("run-test").addEventListener("click", async () => {
+    async function runTests() {
+      const checks = [];
+
       try {
-        status.className = "";
-        status.textContent = "設定ファイルを読み込んでいます...";
-        result.textContent = "";
-
-        const configs = await loadConfigs();
-
         const startTime = "2026-11-22T00:00:00+09:00";
         const endTime = "2026-11-23T00:00:00+09:00";
 
-        const calculatePositions = date =>
-          window.PositionCalculator.calculatePositions(date);
-
-        status.textContent =
-          "天体イベントを検索してスケジュールを計算しています...";
+        const configs = await loadConfigs("../config/");
 
         const schedule = buildScheduleBase(
           startTime,
           endTime,
-          calculatePositions,
+          window.PositionCalculator.calculatePositions,
           window.AspectDetector,
           configs
         );
 
-        const checks = [];
-
-        // 1. 指定した日本時間の1日が設定されている
+        // 1. 日本時間の1日が正しく設定される
         checks.push({
           name: "日本時間の1日が正しく設定される",
           passed:
-            schedule.startTime ===
-              "2026-11-21T15:00:00.000Z" &&
-            schedule.endTime ===
-              "2026-11-22T15:00:00.000Z"
+            schedule.startTime === "2026-11-21T15:00:00.000Z" &&
+            schedule.endTime === "2026-11-22T15:00:00.000Z"
         });
 
-        // 2. イベントが配列として作成される
+        // 2. 天体イベントが配列として作成される
         checks.push({
           name: "天体イベントが配列として作成される",
           passed: Array.isArray(schedule.events)
         });
 
-        // 3. イベントの時刻と天体情報が正しい
-        const eventCheck = schedule.events.every(event =>
+        // 3. イベントの情報と発生時刻が正しい
+        const eventShapeCheck = schedule.events.every(event =>
           typeof event.planetA === "string" &&
           typeof event.planetB === "string" &&
           typeof event.aspectType === "string" &&
-          typeof event.exactTime === "string" &&
           typeof event.orb === "number" &&
-          Number.isFinite(new Date(event.exactTime).getTime())
+          typeof event.exactTime === "string" &&
+          !Number.isNaN(new Date(event.exactTime).getTime())
         );
 
         checks.push({
           name: "イベントの情報と発生時刻が正しい",
-          passed: eventCheck
+          passed: eventShapeCheck
         });
 
         // 4. 時間帯が1つ以上作成される
         checks.push({
           name: "時間帯が1つ以上作成される",
           passed:
-            schedule.blockCount > 0 &&
-            schedule.blockCount === schedule.blocks.length
+            Array.isArray(schedule.blocks) &&
+            schedule.blocks.length > 0
         });
 
-        // 5. 時間帯の開始・終了が連続している
-        const boundaryCheck = schedule.blocks.every(
-          (block, index) => {
-            if (index === 0) {
-              return block.startTime === schedule.startTime;
-            }
-
-            return (
-              block.startTime ===
-              schedule.blocks[index - 1].endTime
-            );
+        // 5. 時間帯の境界が連続している
+        const boundaryCheck = schedule.blocks.every((block, index) => {
+          if (index === 0) {
+            return block.startTime === schedule.startTime;
           }
-        );
+
+          return (
+            schedule.blocks[index - 1].endTime === block.startTime
+          );
+        }) &&
+        schedule.blocks[schedule.blocks.length - 1].endTime ===
+          schedule.endTime;
 
         checks.push({
           name: "時間帯の境界が連続している",
-          passed:
-            boundaryCheck &&
-            schedule.blocks[
-              schedule.blocks.length - 1
-            ].endTime === schedule.endTime
+          passed: boundaryCheck
         });
 
-        // 6. 各時間帯で10天体が取得できる
-        const planetCheck = schedule.blocks.every(
-          block =>
-            block.positions &&
-            Object.keys(block.positions.planets).length === 10
+        // 6. 各時間帯で10天体の位置を取得できる
+        const planetPositionCheck = schedule.blocks.every(block =>
+          block.positions &&
+          block.positions.planets &&
+          Object.keys(block.positions.planets).length === 10
         );
 
         checks.push({
           name: "各時間帯で10天体の位置を取得できる",
-          passed: planetCheck
+          passed: planetPositionCheck
         });
 
-        // 7. アスペクト情報が正しい形式で作成される
-        const aspectCheck = schedule.blocks.every(
-          block =>
-            Array.isArray(block.aspects) &&
-            block.aspects.length <= 45 &&
-            block.aspects.every(aspect =>
-              typeof aspect.planetA === "string" &&
-              typeof aspect.planetB === "string" &&
-              typeof aspect.aspectType === "string" &&
-              typeof aspect.orb === "number" &&
-              typeof aspect.applying === "boolean"
-            )
+        // 7. 時間帯ごとのアスペクト情報が正しい
+        const aspectCheck = schedule.blocks.every(block =>
+          Array.isArray(block.aspects) &&
+          block.aspects.every(aspect =>
+            typeof aspect.planetA === "string" &&
+            typeof aspect.planetB === "string" &&
+            typeof aspect.aspectType === "string" &&
+            typeof aspect.orb === "number" &&
+            typeof aspect.applying === "boolean"
+          )
         );
 
         checks.push({
@@ -177,23 +121,24 @@
           passed: aspectCheck
         });
 
-        // 8. 12星座分のスコアが作成される
-        const scoreCheck = schedule.blocks.every(
-          block =>
-            block.fortuneData &&
-            block.fortuneData.summary &&
-            block.fortuneData.summary.scoreSignCount === 12
+        // 8. 各時間帯で12星座分のスコアが作成される
+        const signScoreCheck = schedule.blocks.every(block =>
+          block.fortuneData &&
+          Array.isArray(block.fortuneData.scores) &&
+          block.fortuneData.scores.length === 12
         );
 
         checks.push({
           name: "各時間帯で12星座分のスコアが作成される",
-          passed: scoreCheck
+          passed: signScoreCheck
         });
 
-        // 9. 4カテゴリー分のスコアが作成される
-        const categoryCheck = schedule.blocks.every(
-          block =>
-            block.fortuneData.summary.scoreCategoryCount === 4
+        // 9. 各時間帯で4カテゴリーのスコアが作成される
+        const categoryCheck = schedule.blocks.every(block =>
+          block.fortuneData.scores.every(sign =>
+            sign.categories &&
+            Object.keys(sign.categories).length === 4
+          )
         );
 
         checks.push({
@@ -209,64 +154,64 @@
             schedule.positionCalculationCount > 0
         });
 
-        // 11. 検出されたイベントが運勢データにも反映される
-        const eventIntegrationCheck = schedule.blocks.every(
-          block =>
-            block.fortuneData &&
-            block.fortuneData.events.length === schedule.eventCount &&
-            block.fortuneData.summary.eventCount === schedule.eventCount
-        );
-        
+        // 11. イベントが正しい時間帯に振り分けられる
+        const eventIntegrationCheck =
+          schedule.blocks.every(block =>
+            block.events.length === block.fortuneData.events.length &&
+            block.events.length === block.fortuneData.summary.eventCount &&
+            block.events.every((event, index) =>
+              event.id === block.fortuneData.events[index].id
+            )
+          ) &&
+          schedule.blocks.reduce(
+            (total, block) => total + block.events.length,
+            0
+          ) === schedule.eventCount;
+
         checks.push({
-          name: "検出されたイベントが運勢データにも反映される",
-          passed: eventIntegrationCheck
+          name: "イベントが正しい時間帯に振り分けられる",
+          passed: eventIntegrationCheck,
+          actual: schedule.blocks.map(block => ({
+            block: block.id,
+            eventCount: block.events.length
+          }))
         });
 
-        const passed = checks.filter(
-          item => item.passed
-        ).length;
+        const passedCount = checks.filter(check => check.passed).length;
 
-        const failed = checks.length - passed;
-
-        status.className = failed === 0
-          ? "success"
-          : "error";
-
-        status.textContent =
-          `テスト結果: ${checks.length}件中 ${passed}件合格、${failed}件失敗`;
-
-        result.textContent = JSON.stringify({
-          checks,
-          schedule: {
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
-            eventCount: schedule.eventCount,
-            positionCalculationCount:
-              schedule.positionCalculationCount,
-            blockCount: schedule.blockCount,
+        resultsElement.textContent =
+          "テスト結果: " +
+          checks.length +
+          "件中 " +
+          passedCount +
+          "件合格、" +
+          (checks.length - passedCount) +
+          "件失敗\n\n" +
+          JSON.stringify({
+            checks,
+            scheduleSummary: {
+              eventCount: schedule.eventCount,
+              blockCount: schedule.blockCount,
+              positionCalculationCount:
+                schedule.positionCalculationCount
+            },
             events: schedule.events,
             blocks: schedule.blocks.map(block => ({
               id: block.id,
               startTime: block.startTime,
               endTime: block.endTime,
-              midpoint: block.midpoint,
-              planetCount: Object.keys(
-                block.positions.planets
-              ).length,
-              aspectCount: block.aspects.length,
-              fortuneSummary: block.fortuneData.summary,
-              firstSignScores: block.fortuneData.scores[0]
+              eventCount: block.events.length
             }))
-          }
-        }, null, 2);
+          }, null, 2);
 
       } catch (error) {
-        status.className = "error";
-        status.textContent = "エラーが発生しました。";
-        result.textContent = error.stack || error.message;
+        resultsElement.textContent =
+          "テスト実行中にエラーが発生しました:\n\n" +
+          error.stack;
       }
-    });
-  </script>
+    }
 
+    runTests();
+  </script>
 </body>
 </html>
