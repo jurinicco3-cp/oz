@@ -1,1 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>12星座 運勢スコア一覧テスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      color: #333;
+      background: #f7f7fa;
+    }
 
+    h1 {
+      font-size: 22px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 20px 0;
+    }
+
+    select, input, button {
+      padding: 9px;
+      font-size: 15px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .message {
+      margin: 15px 0;
+      font-weight: bold;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: white;
+      border-radius: 8px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 650px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #eeeef5;
+    }
+
+    td:first-child {
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .score {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .empty {
+      color: #999;
+    }
+
+    .note {
+      color: #666;
+      font-size: 13px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>12星座 × 4カテゴリー 運勢スコア一覧</h1>
+  <p>時間帯ごとの運勢スコアを確認するテストページです。</p>
+
+  <div class="controls">
+    <label>
+      日付：
+      <input type="date" id="targetDate">
+    </label>
+
+    <label>
+      カテゴリー：
+      <select id="category">
+        <option value="overall">全体運</option>
+        <option value="love">恋愛運</option>
+        <option value="money">金運</option>
+        <option value="work">仕事運</option>
+      </select>
+    </label>
+
+    <button id="runButton">運勢を計算</button>
+  </div>
+
+  <div id="message" class="message">
+    日付とカテゴリーを選んで「運勢を計算」を押してください。
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>星座</th>
+          <th>時間帯</th>
+          <th>影響度</th>
+          <th>好調度</th>
+          <th>関与アスペクト数</th>
+        </tr>
+      </thead>
+      <tbody id="resultBody">
+        <tr>
+          <td colspan="5" class="empty">まだ計算結果はありません。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note">
+    ※影響度と好調度は、エンジン内部の計算値です。
+    実際の出来事や結果を保証するものではありません。
+  </p>
+
+  <script type="module">
+    import { buildScheduleBase } from "./schedule-engine.js";
+    import { loadConfigs } from "./config-loader.js";
+
+    const signs = [
+      "牡羊座", "牡牛座", "双子座", "蟹座",
+      "獅子座", "乙女座", "天秤座", "蠍座",
+      "射手座", "山羊座", "水瓶座", "魚座"
+    ];
+
+    const categories = {
+      overall: "overall",
+      love: "love",
+      money: "money",
+      work: "work"
+    };
+
+    const targetDate = document.getElementById("targetDate");
+    const categorySelect = document.getElementById("category");
+    const runButton = document.getElementById("runButton");
+    const resultBody = document.getElementById("resultBody");
+    const message = document.getElementById("message");
+
+    function formatTime(value) {
+      return new Intl.DateTimeFormat("ja-JP", {
+        timeZone: "Asia/Tokyo",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(value));
+    }
+
+    function getScore(signData, category) {
+      const score = signData.categories?.[category];
+
+      if (!score) return null;
+
+      return {
+        influence: score.influence,
+        favorability: score.favorability,
+        aspectCount: score.aspectCount
+      };
+    }
+
+    async function runTest() {
+      resultBody.innerHTML = "";
+      message.textContent = "計算中です...";
+
+      try {
+        const dateValue = targetDate.value;
+
+        if (!dateValue) {
+          throw new Error("日付を選択してください。");
+        }
+
+        const startTime = new Date(
+          `${dateValue}T00:00:00+09:00`
+        );
+
+        const endTime = new Date(
+          startTime.getTime() + 24 * 60 * 60 * 1000
+        );
+
+        const configs = await loadConfigs();
+
+        const schedule = buildScheduleBase(
+          startTime,
+          endTime,
+          date => window.PositionCalculator.calculatePositions(date),
+          window.AspectDetector,
+          configs
+        );
+
+        const category = categories[categorySelect.value];
+
+        for (let signIndex = 0; signIndex < 12; signIndex++) {
+          const signId = signs[signIndex];
+
+          for (const block of schedule.blocks) {
+            const signData = block.fortuneData.scores[signIndex];
+            const score = getScore(signData, category);
+
+            const row = document.createElement("tr");
+
+            const signCell = document.createElement("td");
+            signCell.textContent = signId;
+            row.appendChild(signCell);
+
+            const timeCell = document.createElement("td");
+            timeCell.textContent =
+              `${formatTime(block.startTime)}〜${formatTime(block.endTime)}`;
+            row.appendChild(timeCell);
+
+            const influenceCell = document.createElement("td");
+            const favorabilityCell = document.createElement("td");
+            const aspectCell = document.createElement("td");
+
+            if (score) {
+              influenceCell.textContent =
+                Number(score.influence).toFixed(1);
+
+              favorabilityCell.textContent =
+                Number(score.favorability).toFixed(1);
+
+              aspectCell.textContent = score.aspectCount;
+            } else {
+              influenceCell.textContent = "—";
+              favorabilityCell.textContent = "—";
+              aspectCell.textContent = "—";
+            }
+
+            influenceCell.className = "score";
+            favorabilityCell.className = "score";
+
+            row.append(
+              influenceCell,
+              favorabilityCell,
+              aspectCell
+            );
+
+            resultBody.appendChild(row);
+          }
+        }
+
+        message.textContent =
+          `${dateValue} の計算完了：12星座 × ${schedule.blockCount}時間帯`;
+
+      } catch (error) {
+        console.error(error);
+        message.textContent = `エラー：${error.message}`;
+        resultBody.innerHTML = `
+          <tr>
+            <td colspan="5">計算できませんでした。エラー内容を確認してください。</td>
+          </tr>
+        `;
+      }
+    }
+
+    function setToday() {
+      const now = new Date();
+      const japanDate = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(now);
+
+      targetDate.value = japanDate;
+    }
+
+    setToday();
+    runButton.addEventListener("click", runTest);
+  </script>
+
+</body>
+</html>
