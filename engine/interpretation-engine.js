@@ -23,7 +23,24 @@ export function interpretAspect(aspect, configs) {
   }
 
   // 天体の順番に左右されず、同じ組み合わせを検索する
-  const combinationKey = [planetA, planetB].sort().join("_");
+  const combinationKey = [planetA, planetB]
+  .sort((a, b) => {
+    const order = [
+      "sun",
+      "moon",
+      "mercury",
+      "venus",
+      "mars",
+      "jupiter",
+      "saturn",
+      "uranus",
+      "neptune",
+      "pluto"
+    ];
+
+    return order.indexOf(a) - order.indexOf(b);
+  })
+  .join("_");
 
   const combination =
     planetCombinations.combination_rules[combinationKey];
