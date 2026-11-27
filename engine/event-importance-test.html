@@ -348,10 +348,24 @@
               "テスト完了：この日に比較対象のイベントはありません。";
 
             result.textContent = JSON.stringify({
-              date: selectedDate,
-              eventCount: 0,
-              message: "イベントが見つかりませんでした。"
-            }, null, 2);
+  date: output.date,
+  eventCount: output.eventCount,
+  averageOfMaximumChanges: output.averageOfMaximumChanges,
+  largestInfluenceChanges:
+    output.largestInfluenceChanges.slice(0, 5).map(item => ({
+      event: `${item.planetA}-${item.planetB}`,
+      time: item.exactTime,
+      change: item.maxInfluenceChange,
+      target: item.maxInfluenceTarget
+    })),
+  largestFavorabilityChanges:
+    output.largestFavorabilityChanges.slice(0, 5).map(item => ({
+      event: `${item.planetA}-${item.planetB}`,
+      time: item.exactTime,
+      change: item.maxFavorabilityChange,
+      target: item.maxFavorabilityTarget
+    }))
+}, null, 2);
 
             return;
           }
