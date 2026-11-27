@@ -1,93 +1,211 @@
 
-/**
- * 1日の時間帯を作成する
- *
- * 天体イベントの発生時刻を境界として、
- * 1日を複数の時間帯に分割する。
- */
-
 export function buildTimeBlocks(events, options = {}) {
   if (!Array.isArray(events)) {
-    throw new TypeError("events must be an array");
+    throw new Error("events must be an array.");
   }
 
-  const {
-    startTime,
-    endTime,
-    mergeSimultaneousEvents = true
-  } = options;
-
-  const start = new Date(startTime);
-  const end = new Date(endTime);
+  const start = new Date(options.startTime);
+  const end = new Date(options.endTime);
 
   if (
     Number.isNaN(start.getTime()) ||
-    Number.isNaN(end.getTime())
+    Number.isNaN(end.getTime()) ||
+    start >= end
   ) {
-    throw new TypeError("Invalid startTime or endTime");
+    throw new Error("Invalid schedule time range.");
   }
 
-  if (start >= end) {
-    throw new RangeError(
-      "startTime must be earlier than endTime"
-    );
-  }
+  const mergeSimultaneousEvents =
+    options.mergeSimultaneousEvents !== false;
 
-  // 1日の開始・終了時刻を境界として登録
+  const minimumBlockMinutes =
+    Number.isFinite(options.minimumBlockMinutes)
+      ? Math.max(0, options.minimumBlockMinutes)
+      : 15;
+
+  const importantEventIds = new Set(
+    Array.isArray(options.importantEventIds)
+      ? options.importantEventIds
+      : []
+  );
+
   const boundaries = [
-    start.getTime(),
-    end.getTime()
+    {
+      time: start,
+      event: null
+    },
+    {
+      time: end,
+      event: null
+    }
   ];
 
-  // 1日の範囲内にある天体イベントを追加
-  events.forEach(event => {
+  for (const event of events) {
+    if (!event || !event.exactTime) {
+      continue;
+    }
+
     const eventTime = new Date(event.exactTime);
 
-    if (Number.isNaN(eventTime.getTime())) {
-      throw new TypeError(
-        "Invalid event exactTime"
-      );
+    if (
+      Number.isNaN(eventTime.getTime()) ||
+      eventTime <= start ||
+      eventTime >= end
+    ) {
+      continue;
     }
 
-    const time = eventTime.getTime();
+    boundaries.push({
+      time: eventTime,
+      event
+    });
+  }
 
-    if (time > start.getTime() && time < end.getTime()) {
-      boundaries.push(time);
+  boundaries.sort(
+    (a, b) => a.time.getTime() - b.time.getTime()
+  );
+
+  const uniqueBoundaries = [];
+
+  for (const boundary of boundaries) {
+    const previous =
+      uniqueBoundaries[uniqueBoundaries.length - 1];
+
+    if (
+      mergeSimultaneousEvents &&
+      previous &&
+      boundary.time.getTime() === previous.time.getTime()
+    ) {
+      if (boundary.event) {
+        if (!previous.events) {
+          previous.events = [];
+        }
+
+        previous.events.push(boundary.event);
+      }
+
+      continue;
     }
-  });
 
-  // 時刻順に並べる
-  boundaries.sort((a, b) => a - b);
+    uniqueBoundaries.push({
+      time: boundary.time,
+      events: boundary.event ? [boundary.event] : []
+    });
+  }
 
-  // 同時刻の境界をまとめる
-  const uniqueBoundaries = mergeSimultaneousEvents
-    ? boundaries.filter(
-        (time, index) =>
-          index === 0 || time !== boundaries[index - 1]
-      )
-    : boundaries;
+  let blocks = [];
 
-  // 境界と境界の間を時間帯にする
-  const blocks = [];
-
-  for (
-    let i = 0;
-    i < uniqueBoundaries.length - 1;
-    i++
-  ) {
+  for (let i = 0; i < uniqueBoundaries.length - 1; i++) {
     const blockStart = uniqueBoundaries[i];
     const blockEnd = uniqueBoundaries[i + 1];
 
+    const durationMinutes =
+      (blockEnd.time.getTime() - blockStart.time.getTime()) /
+      60000;
+
+    if (durationMinutes <= 0) {
+      continue;
+    }
+
     blocks.push({
-      id: `block-${i + 1}`,
-      startTime: new Date(blockStart).toISOString(),
-      endTime: new Date(blockEnd).toISOString(),
+      startTime: blockStart.time.toISOString(),
+      endTime: blockEnd.time.toISOString(),
       midpoint: new Date(
-        blockStart + (blockEnd - blockStart) / 2
-      ).toISOString()
+        (blockStart.time.getTime() + blockEnd.time.getTime()) / 2
+      ).toISOString(),
+      durationMinutes,
+      startEvents: blockStart.events,
+      endEvents: blockEnd.events
     });
+  }
+
+  // 短い時間帯を、重要なイベントがなければ隣接ブロックへ統合する
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+
+      if (block.durationMinutes >= minimumBlockMinutes) {
+        continue;
+      }
+
+      const boundaryEvents = [
+        ...block.startEvents,
+        ...block.endEvents
+      ];
+
+      const hasImportantEvent = boundaryEvents.some(event =>
+        importantEventIds.has(event.id)
+      );
+
+      if (hasImportantEvent) {
+        continue;
+      }
+
+      if (blocks.length <= 1) {
+        continue;
+      }
+
+      const previous = i > 0 ? blocks[i - 1] : null;
+      const next =
+        i < blocks.length - 1 ? blocks[i + 1] : null;
+
+      let targetIndex;
+
+      if (!previous) {
+        targetIndex = i + 1;
+      } else if (!next) {
+        targetIndex = i - 1;
+      } else {
+        targetIndex =
+          previous.durationMinutes <= next.durationMinutes
+            ? i - 1
+            : i + 1;
+      }
+
+      const target = blocks[targetIndex];
+
+      const mergedStart =
+        targetIndex < i ? target.startTime : block.startTime;
+
+      const mergedEnd =
+        targetIndex > i ? target.endTime : block.endTime;
+
+      const mergedStartEvents =
+        targetIndex < i
+          ? target.startEvents
+          : block.startEvents;
+
+      const mergedEndEvents =
+        targetIndex > i
+          ? target.endEvents
+          : block.endEvents;
+
+      const startMs = new Date(mergedStart).getTime();
+      const endMs = new Date(mergedEnd).getTime();
+
+      const mergedBlock = {
+        startTime: mergedStart,
+        endTime: mergedEnd,
+        midpoint: new Date(
+          (startMs + endMs) / 2
+        ).toISOString(),
+        durationMinutes: (endMs - startMs) / 60000,
+        startEvents: mergedStartEvents,
+        endEvents: mergedEndEvents
+      };
+
+      const firstIndex = Math.min(i, targetIndex);
+
+      blocks.splice(firstIndex, 2, mergedBlock);
+
+      changed = true;
+      break;
+    }
   }
 
   return blocks;
 }
-
