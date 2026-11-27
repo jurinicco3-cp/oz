@@ -71,6 +71,22 @@ export function buildFortuneData(
     configs
   );
 
+    // アスペクトを占星術的に解釈
+  const interpretations = interpretAspects(
+    aspects,
+    configs
+  );
+
+  // 4カテゴリーのアドバイスデータを作成
+  const adviceData = buildAdviceData(
+    interpretations
+  );
+
+  // 表示用の文章を生成
+  const advice = generateAllAdvice(
+    adviceData
+  );
+
   return {
     datetime: positions.datetime || null,
     states,
@@ -78,13 +94,18 @@ export function buildFortuneData(
     houses,
     signs,
     scores: scoreData.signs,
+    interpretations,
+    adviceData,
+    advice,
     summary: {
       stateCount: states.length,
       eventCount: events.length,
       signCount: signs.length,
       planetCount: Object.keys(positions.planets).length,
       scoreSignCount: scoreData.summary.signCount,
-      scoreCategoryCount: scoreData.summary.categoryCount
+      scoreCategoryCount: scoreData.summary.categoryCount,
+      interpretationCount: interpretations.length,
+      adviceCategoryCount: advice.summary.categoryCount
     }
   };
 }
