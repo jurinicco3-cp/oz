@@ -442,6 +442,105 @@ test(
 });
   }
 );
+
+        
+        // 11. 同じ天体配置でも星座によってハウスが変わるか確認
+        test(
+          "同じ月の位置でも星座によってハウスが変わる",
+          () => {
+            const ariesMoonHouse =
+              houses[0].planets.moon.house;
+
+            const taurusMoonHouse =
+              houses[1].planets.moon.house;
+
+            assert(
+              ariesMoonHouse === 3,
+              `牡羊座基準の月が3ハウスではありません: ${ariesMoonHouse}`
+            );
+
+            assert(
+              taurusMoonHouse === 2,
+              `牡牛座基準の月が2ハウスではありません: ${taurusMoonHouse}`
+            );
+
+            assert(
+              ariesMoonHouse !== taurusMoonHouse,
+              "星座を変えても月のハウスが変わっていません"
+            );
+          }
+        );
+
+
+        // 12. ハウスの重みが影響度に反映されるか確認
+        test(
+          "ハウスの重みを変えると影響度も変化する",
+          () => {
+            const testConfigs = JSON.parse(
+              JSON.stringify(configs)
+            );
+
+            // 太陽と水星だけが影響する条件にする
+            for (const planet of Object.keys(
+              testConfigs.scoringRules.planet_weights
+            )) {
+              testConfigs.scoringRules.planet_weights[planet] = 0;
+            }
+
+            testConfigs.scoringRules.planet_weights.sun = 1;
+            testConfigs.scoringRules.planet_weights.mercury = 1;
+
+            // すべてのハウスの重みを同じにする
+            for (let house = 1; house <= 12; house++) {
+              testConfigs.scoringRules.house_weights[String(house)] = 1;
+            }
+
+            const controlledData = {
+              ...fortuneData,
+              states: [
+                {
+                  planetA: "sun",
+                  planetB: "moon",
+                  aspectType: "conjunction",
+                  orb: 1.2,
+                  motion: "applying"
+                },
+                {
+                  planetA: "mercury",
+                  planetB: "venus",
+                  aspectType: "trine",
+                  orb: 2.0,
+                  motion: "separating"
+                }
+              ]
+            };
+
+            const originalScores = calculateFortuneScores(
+              controlledData,
+              testConfigs
+            );
+
+            const originalInfluence =
+              originalScores.signs[0].categories.overall.influence;
+
+            // 太陽がいる1ハウスの重みだけを2倍にする
+            testConfigs.scoringRules.house_weights["1"] = 2;
+
+            const changedScores = calculateFortuneScores(
+              controlledData,
+              testConfigs
+            );
+
+            const changedInfluence =
+              changedScores.signs[0].categories.overall.influence;
+
+            assert(
+              changedInfluence !== originalInfluence,
+              `ハウスの重みを変更しても影響度が変わりませんでした。変更前: ${originalInfluence}、変更後: ${changedInfluence}`
+            );
+          }
+        );
+
         
         // 8. スコアのサンプルを取得
         const aries = fortuneScores.signs[0];
