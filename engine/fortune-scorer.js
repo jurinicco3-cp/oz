@@ -7,6 +7,8 @@
  * influence   : 天体配置から受ける影響度
  * favorability: 行動を後押しする象徴の度合い
  *
+ * rawInfluence: 重みを反映した影響度の合計値（内部確認用）
+ *
  * 数値は内部計算用。画面には直接表示しない。
  */
 
@@ -32,8 +34,11 @@ function getAspectOrb(aspectType, configs) {
     item => item.id === aspectType
   );
 
-  if (aspectSettings && typeof aspectSettings.orb === "number") {
-    return aspectSettings.orb;
+  if (
+    aspectSettings &&
+    typeof aspectSettings.default_orb_degrees === "number"
+  ) {
+    return aspectSettings.default_orb_degrees;
   }
 
   const defaults = {
@@ -234,7 +239,8 @@ export function calculateCategoryScore(
     }
   }
 
-  // 影響度：最大値を100とする
+  // 影響度：現在は最大値に対する割合で計算
+  // 次の調整で天体配置の総量を反映する方式に変更する
   const influence =
     maximumInfluence > 0
       ? (totalInfluence / maximumInfluence) * 100
@@ -254,7 +260,10 @@ export function calculateCategoryScore(
     favorability: roundScore(
       clamp(favorability, scoreRange.min, scoreRange.max)
     ),
-    aspectCount: contributingAspectCount
+    aspectCount: contributingAspectCount,
+
+    // 基準値を決めるための内部確認用
+    rawInfluence: roundScore(totalInfluence)
   };
 }
 
