@@ -1,1 +1,220 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advice Engine Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .pass { color: green; }
+    .fail { color: red; }
+    pre {
+      white-space: pre-wrap;
+      background: #f5f5f5;
+      padding: 12px;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <h1>アドバイスエンジン テスト</h1>
+  <p id="status">テスト準備中...</p>
+  <div id="results"></div>
+  <h2>振り分け結果</h2>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import {
+      buildCategoryAdviceData,
+      buildAdviceData
+    } from "./advice-engine.js";
+
+    const resultsElement = document.getElementById("results");
+    const statusElement = document.getElementById("status");
+    const outputElement = document.getElementById("output");
+
+    let passed = 0;
+    let failed = 0;
+
+    function test(name, callback) {
+      const item = document.createElement("p");
+
+      try {
+        callback();
+        passed++;
+        item.className = "pass";
+        item.textContent = "PASS: " + name;
+      } catch (error) {
+        failed++;
+        item.className = "fail";
+        item.textContent = "FAIL: " + name + " - " + error.message;
+      }
+
+      resultsElement.appendChild(item);
+    }
+
+    function assert(condition, message) {
+      if (!condition) throw new Error(message);
+    }
+
+    const sampleInterpretations = [
+      {
+        planets: ["moon", "venus"],
+        aspectType: "trine",
+        theme: "感情と愛情",
+        combinationInterpretation: "安心感と愛情の関係。",
+        aspectInterpretation: "二つの天体が調和する。",
+        opportunity: "人との関係を楽しむ。",
+        caution: "相手への配慮を忘れない。",
+        keywords: ["愛情", "安心感", "心地よさ"]
+      },
+      {
+        planets: ["sun", "saturn"],
+        aspectType: "square",
+        theme: "自己実現と責任",
+        combinationInterpretation: "目標と責任の関係。",
+        aspectInterpretation: "二つの天体の働きを調整する。",
+        opportunity: "計画を見直す。",
+        caution: "焦らず取り組む。",
+        keywords: ["責任", "努力", "継続"]
+      },
+      {
+        planets: ["mercury", "mars"],
+        aspectType: "sextile",
+        theme: "思考と行動",
+        combinationInterpretation: "考えを行動につなげる。",
+        aspectInterpretation: "協力して働く。",
+        opportunity: "考えを実行に移す。",
+        caution: "急ぎすぎない。",
+        keywords: ["判断", "発言", "実行力"]
+      }
+    ];
+
+    test("4つの運勢が作られる", () => {
+      const result = buildCategoryAdviceData(sampleInterpretations);
+
+      assert(
+        Object.keys(result).length === 4,
+        "4カテゴリーではありません"
+      );
+
+      assert(
+        result.overall && result.love && result.money && result.work,
+        "必要なカテゴリーが不足しています"
+      );
+    });
+
+    test("カテゴリー名が正しい", () => {
+      const result = buildCategoryAdviceData(sampleInterpretations);
+
+      assert(result.overall.label === "総合運", "総合運の名前が違います");
+      assert(result.love.label === "恋愛運", "恋愛運の名前が違います");
+      assert(result.money.label === "金運", "金運の名前が違います");
+      assert(result.work.label === "仕事運", "仕事運の名前が違います");
+    });
+
+    test("恋愛に関係する解釈が振り分けられる", () => {
+      const result = buildCategoryAdviceData(sampleInterpretations);
+
+      assert(
+        result.love.themes.some(item => item.theme === "感情と愛情"),
+        "恋愛向けのテーマがありません"
+      );
+    });
+
+    test("仕事に関係する解釈が振り分けられる", () => {
+      const result = buildCategoryAdviceData(sampleInterpretations);
+
+      assert(
+        result.work.themes.some(item => item.theme === "思考と行動"),
+        "仕事向けのテーマがありません"
+      );
+    });
+
+    test("金運に関係する解釈が振り分けられる", () => {
+      const result = buildCategoryAdviceData(sampleInterpretations);
+
+      assert(
+        result.money.themes.some(item => item.theme === "自己実現と責任"),
+        "金運向けのテーマがありません"
+      );
+    });
+
+    test("関連度の高い順に並ぶ", () => {
+      const result = buildCategoryAdviceData(sampleInterpretations);
+
+      const themes = result.overall.themes;
+
+      for (let i = 1; i < themes.length; i++) {
+        assert(
+          themes[i - 1].relevance >= themes[i].relevance,
+          "関連度の順番が正しくありません"
+        );
+      }
+    });
+
+    test("空の解釈データも処理できる", () => {
+      const result = buildAdviceData([]);
+
+      assert(result.summary.interpretationCount === 0, "件数が違います");
+      assert(result.summary.categoryCount === 4, "カテゴリー数が違います");
+    });
+
+    test("複数カテゴリーのアドバイスデータをまとめられる", () => {
+      const result = buildAdviceData(sampleInterpretations);
+
+      assert(result.summary.interpretationCount === 3, "解釈件数が違います");
+      assert(result.summary.categoryCount === 4, "カテゴリー数が違います");
+      assert(result.categories.love.themes.length > 0, "恋愛のテーマがありません");
+    });
+
+    test("不正な入力はエラーになる", () => {
+      let threw = false;
+
+      try {
+        buildAdviceData(null);
+      } catch (error) {
+        threw = true;
+      }
+
+      assert(threw, "不正な入力が検出されませんでした");
+    });
+
+    test("不正な解釈データはエラーになる", () => {
+      let threw = false;
+
+      try {
+        buildAdviceData([{ planets: ["moon"] }]);
+      } catch (error) {
+        threw = true;
+      }
+
+      assert(threw, "不正な解釈データが検出されませんでした");
+    });
+
+    const finalResult = buildAdviceData(sampleInterpretations);
+
+    outputElement.textContent = JSON.stringify({
+      summary: finalResult.summary,
+      categories: Object.fromEntries(
+        Object.entries(finalResult.categories).map(([key, value]) => [
+          key,
+          {
+            label: value.label,
+            themeCount: value.themes.length,
+            topThemes: value.themes.slice(0, 2).map(item => item.theme)
+          }
+        ])
+      )
+    }, null, 2);
+
+    statusElement.textContent =
+      `結果：${passed}件成功 / ${failed}件失敗`;
+  </script>
+</body>
+</html>
