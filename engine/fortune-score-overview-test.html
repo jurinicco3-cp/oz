@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -47,7 +48,7 @@
     table {
       border-collapse: collapse;
       width: 100%;
-      min-width: 650px;
+      min-width: 750px;
     }
 
     th, td {
@@ -70,6 +71,12 @@
       font-weight: bold;
     }
 
+    .raw-score {
+      font-size: 16px;
+      font-weight: bold;
+      color: #365b85;
+    }
+
     .empty {
       color: #999;
     }
@@ -82,11 +89,13 @@
   </style>
 </head>
 <body>
+
 <script src="../astronomy/astronomy.browser.min.js"></script>
 <script src="./position-calculator.js"></script>
 <script src="./aspect-detector.js"></script>
+
   <h1>12星座 × 4カテゴリー 運勢スコア一覧</h1>
-  <p>時間帯ごとの運勢スコアを確認するテストページです。</p>
+  <p>時間帯ごとの運勢スコアと影響度の合計値を確認するテストページです。</p>
 
   <div class="controls">
     <label>
@@ -118,20 +127,22 @@
           <th>星座</th>
           <th>時間帯</th>
           <th>影響度</th>
+          <th>影響度の合計値</th>
           <th>好調度</th>
           <th>関与アスペクト数</th>
         </tr>
       </thead>
       <tbody id="resultBody">
         <tr>
-          <td colspan="5" class="empty">まだ計算結果はありません。</td>
+          <td colspan="6" class="empty">まだ計算結果はありません。</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <p class="note">
-    ※影響度と好調度は、エンジン内部の計算値です。
+    ※影響度・影響度の合計値・好調度は、エンジン内部の計算値です。
+    影響度の合計値は、今後の影響度の基準値を決めるための確認用です。
     実際の出来事や結果を保証するものではありません。
   </p>
 
@@ -173,6 +184,7 @@
 
       return {
         influence: score.influence,
+        rawInfluence: score.rawInfluence,
         favorability: score.favorability,
         aspectCount: score.aspectCount
       };
@@ -181,6 +193,7 @@
     async function runTest() {
       resultBody.innerHTML = "";
       message.textContent = "計算中です...";
+      runButton.disabled = true;
 
       try {
         const dateValue = targetDate.value;
@@ -228,6 +241,7 @@
             row.appendChild(timeCell);
 
             const influenceCell = document.createElement("td");
+            const rawInfluenceCell = document.createElement("td");
             const favorabilityCell = document.createElement("td");
             const aspectCell = document.createElement("td");
 
@@ -235,21 +249,27 @@
               influenceCell.textContent =
                 Number(score.influence).toFixed(1);
 
+              rawInfluenceCell.textContent =
+                Number(score.rawInfluence).toFixed(2);
+
               favorabilityCell.textContent =
                 Number(score.favorability).toFixed(1);
 
               aspectCell.textContent = score.aspectCount;
             } else {
               influenceCell.textContent = "—";
+              rawInfluenceCell.textContent = "—";
               favorabilityCell.textContent = "—";
               aspectCell.textContent = "—";
             }
 
             influenceCell.className = "score";
+            rawInfluenceCell.className = "raw-score";
             favorabilityCell.className = "score";
 
             row.append(
               influenceCell,
+              rawInfluenceCell,
               favorabilityCell,
               aspectCell
             );
@@ -264,16 +284,20 @@
       } catch (error) {
         console.error(error);
         message.textContent = `エラー：${error.message}`;
+
         resultBody.innerHTML = `
           <tr>
-            <td colspan="5">計算できませんでした。エラー内容を確認してください。</td>
+            <td colspan="6">計算できませんでした。エラー内容を確認してください。</td>
           </tr>
         `;
+      } finally {
+        runButton.disabled = false;
       }
     }
 
     function setToday() {
       const now = new Date();
+
       const japanDate = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Tokyo",
         year: "numeric",
