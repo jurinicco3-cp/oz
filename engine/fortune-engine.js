@@ -84,8 +84,8 @@ export function buildFortuneData(
 
   // 表示用の文章を生成
   const advice = generateAllAdvice(
-    adviceData
-  );
+  adviceData.categories
+);
 
   return {
     datetime: positions.datetime || null,
