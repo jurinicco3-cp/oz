@@ -1,8 +1,10 @@
-
 import { buildEvents } from "./event-builder.js";
 import { buildStates } from "./state-builder.js";
 import { calculateAllHouses } from "./house-calculator.js";
 import { calculateFortuneScores } from "./fortune-scorer.js";
+import { interpretAspects } from "./interpretation-engine.js";
+import { buildAdviceData } from "./advice-engine.js";
+import { generateAllAdvice } from "./advice-text-generator.js";
 
 /**
  * 占いエンジンの基本データを作成する
