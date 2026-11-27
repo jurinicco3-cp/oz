@@ -205,11 +205,13 @@ export function buildScheduleBase(
 
   const events = eventData.events;
 
-  // 実際のイベント時刻で1日を分割
+    // 実際のイベント時刻で1日を分割し、
+  // 15分未満の短い時間帯を隣接ブロックに統合する
   const blocks = buildTimeBlocks(events, {
     startTime,
     endTime,
-    mergeSimultaneousEvents: true
+    mergeSimultaneousEvents: true,
+    minimumBlockMinutes: 15
   });
 
   // 各時間帯の運勢データを計算
