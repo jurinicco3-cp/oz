@@ -20,10 +20,17 @@ function clamp(value, min, max) {
 }
 
 /**
- * 小数点以下1桁に丸める
+ * スコアを小数点以下1桁に丸める
  */
 function roundScore(value) {
   return Math.round(value * 10) / 10;
+}
+
+/**
+ * 生の影響量を小数点以下2桁に丸める
+ */
+function roundRawInfluence(value) {
+  return Math.round(value * 100) / 100;
 }
 
 /**
@@ -262,8 +269,8 @@ export function calculateCategoryScore(
     ),
     aspectCount: contributingAspectCount,
 
-    // 基準値を決めるための内部確認用
-    rawInfluence: roundScore(totalInfluence)
+    // 基準値を決めるための内部確認用（小数点以下2桁）
+    rawInfluence: roundRawInfluence(totalInfluence)
   };
 }
 
@@ -279,11 +286,11 @@ export function calculateFortuneScores(
   }
 
   if (!fortuneData.houses) {
-    throw new TypeError("House data is required");
+    throw new Error("House data is required");
   }
 
   if (!configs || !configs.scoringRules) {
-    throw new TypeError("Scoring rules are required");
+    throw new Error("Scoring rules are required");
   }
 
   const categories = [
