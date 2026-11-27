@@ -177,14 +177,16 @@
           "\n失敗: " + failed;
 
         if (data) {
-          results.textContent +=
-            "\n\n--- 生成データの確認 ---" +
-            "\n日時: " + data.datetime +
-            "\n星座数: " + data.scores.length +
-            "\n解釈数: " + data.interpretations.length +
-            "\nアドバイスカテゴリー数: " +
-            data.advice.summary.categoryCount;
-        }
+  results.textContent +=
+    "\n\n--- 生成データの確認 ---" +
+    "\n日時: " + data.datetime +
+    "\n星座数: " +
+    (Array.isArray(data.scores) ? data.scores.length : "未生成") +
+    "\n解釈数: " +
+    (Array.isArray(data.interpretations) ? data.interpretations.length : "未生成") +
+    "\nアドバイスカテゴリー数: " +
+    (data.advice?.summary?.categoryCount ?? "未生成");
+}
 
       } catch (error) {
         results.textContent =
