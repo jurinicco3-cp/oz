@@ -1,1 +1,153 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Advice Text Generator Test</title>
+</head>
+<body>
+  <h1>アドバイス文章生成テスト</h1>
+  <pre id="results">テスト実行中...</pre>
+
+  <script type="module">
+    import {
+      generateAllAdvice
+    } from "./advice-text-generator.js";
+
+    const results = document.getElementById("results");
+    const checks = [];
+
+    function test(name, callback) {
+      try {
+        callback();
+        checks.push("PASS: " + name);
+      } catch (error) {
+        checks.push("FAIL: " + name + " - " + error.message);
+      }
+    }
+
+    function assert(condition, message) {
+      if (!condition) throw new Error(message);
+    }
+
+    const sampleData = {
+      overall: {
+        label: "総合運",
+        themes: [{
+          theme: "思考と行動",
+          opportunity: "考えを整理するきっかけになりそうです。",
+          caution: "焦って行動しないようにしましょう。",
+          planets: ["mercury", "mars"],
+          aspectType: "square"
+        }]
+      },
+      love: {
+        label: "恋愛運",
+        themes: [{
+          theme: "感情と愛情",
+          opportunity: "素直な気持ちを見つめてみましょう。",
+          caution: "相手の反応を決めつけないようにしましょう。",
+          planets: ["moon", "venus"],
+          aspectType: "trine"
+        }]
+      },
+      money: {
+        label: "金運",
+        themes: [{
+          theme: "豊かさと価値観",
+          opportunity: "お金の使い方を見直してみましょう。",
+          caution: "勢いだけで大きな判断をしないようにしましょう。",
+          planets: ["venus", "jupiter"],
+          aspectType: "sextile"
+        }]
+      },
+      work: {
+        label: "仕事運",
+        themes: [{
+          theme: "責任と努力",
+          opportunity: "計画を立てて取り組んでみましょう。",
+          caution: "無理を重ねないようにしましょう。",
+          planets: ["sun", "saturn"],
+          aspectType: "square"
+        }]
+      }
+    };
+
+    let output = null;
+
+    test("4カテゴリーの文章生成", () => {
+      output = generateAllAdvice(sampleData);
+      assert(
+        Object.keys(output.advice).length === 4,
+        "4カテゴリーになっていません"
+      );
+    });
+
+    test("総合運の文章生成", () => {
+      assert(output.advice.overall.mainAdvice.length > 0, "文章がありません");
+    });
+
+    test("恋愛運の文章生成", () => {
+      assert(output.advice.love.mainAdvice.length > 0, "文章がありません");
+    });
+
+    test("金運の文章生成", () => {
+      assert(output.advice.money.mainAdvice.length > 0, "文章がありません");
+    });
+
+    test("仕事運の文章生成", () => {
+      assert(output.advice.work.mainAdvice.length > 0, "文章がありません");
+    });
+
+    test("注意点の生成", () => {
+      assert(output.advice.love.caution.length > 0, "注意点がありません");
+    });
+
+    test("カテゴリー別の行動提案", () => {
+      assert(
+        output.advice.money.action !== output.advice.work.action,
+        "行動提案がカテゴリーごとに分かれていません"
+      );
+    });
+
+    test("テーマがない場合の文章生成", () => {
+      const emptyData = {
+        overall: { label: "総合運", themes: [] },
+        love: { label: "恋愛運", themes: [] },
+        money: { label: "金運", themes: [] },
+        work: { label: "仕事運", themes: [] }
+      };
+
+      const emptyResult = generateAllAdvice(emptyData);
+      assert(
+        emptyResult.advice.overall.mainAdvice.length > 0,
+        "空データ用の文章がありません"
+      );
+    });
+
+    test("生成結果のサマリー", () => {
+      assert(output.summary.categoryCount === 4, "カテゴリー数が違います");
+      assert(output.summary.generated === true, "生成状態が不正です");
+    });
+
+    test("不正なデータのエラー処理", () => {
+      let errorOccurred = false;
+      try {
+        generateAllAdvice(null);
+      } catch (error) {
+        errorOccurred = true;
+      }
+      assert(errorOccurred, "エラーが発生しませんでした");
+    });
+
+    const passed = checks.filter(item => item.startsWith("PASS")).length;
+    const failed = checks.length - passed;
+
+    results.textContent =
+      checks.join("\n") +
+      "\n\n結果: " + passed + "/" + checks.length + " PASS" +
+      "\n失敗: " + failed;
+  </script>
+</body>
+</html>
