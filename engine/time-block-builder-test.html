@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -143,6 +142,75 @@
           blocks[0].endTime ===
             "2026-11-22T15:00:00.000Z",
           `終了時刻が正しくありません: ${blocks[0].endTime}`
+        );
+      }
+    );
+
+    // 4. 重要イベントがない4分間は隣の時間帯に統合する
+    test(
+      "重要イベントがない15分未満の時間帯は統合される",
+      () => {
+        const events = [
+          {
+            id: "event-a",
+            exactTime: "2026-11-22T02:09:00+09:00"
+          },
+          {
+            id: "event-b",
+            exactTime: "2026-11-22T02:13:00+09:00"
+          }
+        ];
+
+        const blocks = buildTimeBlocks(events, {
+          startTime,
+          endTime,
+          minimumBlockMinutes: 15
+        });
+
+        assert(
+          blocks.length === 2,
+          `時間帯の数が2ではありません: ${blocks.length}`
+        );
+
+        assert(
+          blocks.every(block => block.durationMinutes >= 15),
+          "15分未満の時間帯が残っています。"
+        );
+      }
+    );
+
+    // 5. 重要イベントがある4分間は独立した時間帯として残す
+    test(
+      "重要イベントがある短い時間帯は残される",
+      () => {
+        const events = [
+          {
+            id: "event-a",
+            exactTime: "2026-11-22T02:09:00+09:00"
+          },
+          {
+            id: "important-event",
+            exactTime: "2026-11-22T02:13:00+09:00"
+          }
+        ];
+
+        const blocks = buildTimeBlocks(events, {
+          startTime,
+          endTime,
+          minimumBlockMinutes: 15,
+          importantEventIds: ["important-event"]
+        });
+
+        assert(
+          blocks.length === 3,
+          `時間帯の数が3ではありません: ${blocks.length}`
+        );
+
+        assert(
+          blocks.some(
+            block => Math.round(block.durationMinutes) === 4
+          ),
+          "4分間の時間帯が残っていません。"
         );
       }
     );
