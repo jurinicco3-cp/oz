@@ -1,1 +1,277 @@
 
+{
+  "version": 1,
+  "description": "天体同士の組み合わせが示す基本テーマ。アスペクトの解釈と組み合わせて使用する。",
+  "combination_rules": {
+    "sun_moon": {
+      "planets": ["sun", "moon"],
+      "theme": "自分らしさと感情",
+      "interpretation": "自分の意志や生き方と、心の状態や安心感との関係。",
+      "keywords": ["自己表現", "感情", "内面と外面"]
+    },
+    "sun_mercury": {
+      "planets": ["sun", "mercury"],
+      "theme": "自己表現と思考",
+      "interpretation": "自分の考えをまとめ、言葉や行動で表現すること。",
+      "keywords": ["思考", "発言", "自己表現"]
+    },
+    "sun_venus": {
+      "planets": ["sun", "venus"],
+      "theme": "自分らしさと愛情",
+      "interpretation": "自分の価値観や魅力を、愛情や人との関わりにどう表すか。",
+      "keywords": ["魅力", "愛情", "価値観"]
+    },
+    "sun_mars": {
+      "planets": ["sun", "mars"],
+      "theme": "意志と行動力",
+      "interpretation": "目標に向かう意志と、実際に行動する力との関係。",
+      "keywords": ["意欲", "決断", "行動"]
+    },
+    "sun_jupiter": {
+      "planets": ["sun", "jupiter"],
+      "theme": "自己実現と成長",
+      "interpretation": "自分の可能性を広げ、成長や発展を目指すこと。",
+      "keywords": ["成長", "自信", "可能性"]
+    },
+    "sun_saturn": {
+      "planets": ["sun", "saturn"],
+      "theme": "自己実現と責任",
+      "interpretation": "自分の目標に責任を持ち、時間をかけて形にすること。",
+      "keywords": ["責任", "努力", "継続"]
+    },
+    "sun_uranus": {
+      "planets": ["sun", "uranus"],
+      "theme": "自己表現と変化",
+      "interpretation": "自分らしさを大切にしながら、新しい方法や可能性を探ること。",
+      "keywords": ["独自性", "変化", "自由"]
+    },
+    "sun_neptune": {
+      "planets": ["sun", "neptune"],
+      "theme": "自己実現と理想",
+      "interpretation": "理想や想像力を、自分の生き方や目標に結びつけること。",
+      "keywords": ["理想", "直感", "想像力"]
+    },
+    "sun_pluto": {
+      "planets": ["sun", "pluto"],
+      "theme": "自己実現と変容",
+      "interpretation": "自分の本質を見つめ直し、大きな変化を受け入れること。",
+      "keywords": ["変容", "集中", "本質"]
+    },
+    "moon_mercury": {
+      "planets": ["moon", "mercury"],
+      "theme": "感情と思考",
+      "interpretation": "感じていることを理解し、言葉にして伝えること。",
+      "keywords": ["気持ち", "会話", "理解"]
+    },
+    "moon_venus": {
+      "planets": ["moon", "venus"],
+      "theme": "感情と愛情",
+      "interpretation": "安心感や心地よさと、愛情や人との調和との関係。",
+      "keywords": ["愛情", "安心感", "心地よさ"]
+    },
+    "moon_mars": {
+      "planets": ["moon", "mars"],
+      "theme": "感情と行動",
+      "interpretation": "感情が行動のきっかけになり、反応や意欲に影響すること。",
+      "keywords": ["感情表現", "意欲", "反応"]
+    },
+    "moon_jupiter": {
+      "planets": ["moon", "jupiter"],
+      "theme": "感情と成長",
+      "interpretation": "心のゆとりや安心感と、希望や前向きな気持ちとの関係。",
+      "keywords": ["寛容", "希望", "心のゆとり"]
+    },
+    "moon_saturn": {
+      "planets": ["moon", "saturn"],
+      "theme": "感情と責任",
+      "interpretation": "感情を落ち着いて受け止め、安心できる基盤を整えること。",
+      "keywords": ["忍耐", "安定", "自制"]
+    },
+    "moon_uranus": {
+      "planets": ["moon", "uranus"],
+      "theme": "感情と変化",
+      "interpretation": "気持ちの変化や新しい刺激に気づき、自分に合う自由を探ること。",
+      "keywords": ["変化", "自由", "新鮮さ"]
+    },
+    "moon_neptune": {
+      "planets": ["moon", "neptune"],
+      "theme": "感情と想像力",
+      "interpretation": "繊細な感受性や想像力を通して、心の動きを感じ取ること。",
+      "keywords": ["共感", "感受性", "想像力"]
+    },
+    "moon_pluto": {
+      "planets": ["moon", "pluto"],
+      "theme": "感情と変容",
+      "interpretation": "心の奥にある感情に向き合い、気持ちの変化を受け止めること。",
+      "keywords": ["深い感情", "洞察", "変容"]
+    },
+    "mercury_venus": {
+      "planets": ["mercury", "venus"],
+      "theme": "思考と調和",
+      "interpretation": "言葉や考え方を通じて、好意や魅力を伝えること。",
+      "keywords": ["会話", "好意", "交渉"]
+    },
+    "mercury_mars": {
+      "planets": ["mercury", "mars"],
+      "theme": "思考と行動",
+      "interpretation": "考えを素早くまとめ、決断や行動につなげること。",
+      "keywords": ["判断", "発言", "実行力"]
+    },
+    "mercury_jupiter": {
+      "planets": ["mercury", "jupiter"],
+      "theme": "思考と発展",
+      "interpretation": "知識や情報の幅を広げ、大きな視点から物事を考えること。",
+      "keywords": ["学習", "知識", "視野"]
+    },
+    "mercury_saturn": {
+      "planets": ["mercury", "saturn"],
+      "theme": "思考と計画",
+      "interpretation": "情報を整理し、現実的で慎重な判断をすること。",
+      "keywords": ["計画", "集中", "慎重さ"]
+    },
+    "mercury_uranus": {
+      "planets": ["mercury", "uranus"],
+      "theme": "思考と革新",
+      "interpretation": "新しい発想や視点を取り入れ、従来の考え方を見直すこと。",
+      "keywords": ["発想", "発見", "革新"]
+    },
+    "mercury_neptune": {
+      "planets": ["mercury", "neptune"],
+      "theme": "思考と直感",
+      "interpretation": "論理的な思考と直感や想像力を組み合わせること。",
+      "keywords": ["直感", "想像力", "感性"]
+    },
+    "mercury_pluto": {
+      "planets": ["mercury", "pluto"],
+      "theme": "思考と洞察",
+      "interpretation": "物事の表面だけでなく、背景や本質まで深く考えること。",
+      "keywords": ["洞察", "調査", "探究"]
+    },
+    "venus_mars": {
+      "planets": ["venus", "mars"],
+      "theme": "愛情と情熱",
+      "interpretation": "人を惹きつける魅力と、自分から働きかける行動力との関係。",
+      "keywords": ["情熱", "魅力", "積極性"]
+    },
+    "venus_jupiter": {
+      "planets": ["venus", "jupiter"],
+      "theme": "愛情と豊かさ",
+      "interpretation": "喜びや人とのつながりを広げ、豊かさを感じること。",
+      "keywords": ["喜び", "寛大さ", "豊かさ"]
+    },
+    "venus_saturn": {
+      "planets": ["venus", "saturn"],
+      "theme": "愛情と継続",
+      "interpretation": "人間関係や価値あるものを大切にし、時間をかけて育てること。",
+      "keywords": ["誠実さ", "信頼", "継続"]
+    },
+    "venus_uranus": {
+      "planets": ["venus", "uranus"],
+      "theme": "愛情と自由",
+      "interpretation": "人との関係や楽しみ方に、新鮮さや自由を取り入れること。",
+      "keywords": ["自由", "個性", "新鮮さ"]
+    },
+    "venus_neptune": {
+      "planets": ["venus", "neptune"],
+      "theme": "愛情と理想",
+      "interpretation": "美しさや優しさへの感受性を高め、理想と現実のバランスを考えること。",
+      "keywords": ["優しさ", "理想", "芸術性"]
+    },
+    "venus_pluto": {
+      "planets": ["venus", "pluto"],
+      "theme": "愛情と深い変化",
+      "interpretation": "人との関係や価値観を深く見つめ、何を大切にするかを問い直すこと。",
+      "keywords": ["深い結びつき", "価値観", "変容"]
+    },
+    "mars_jupiter": {
+      "planets": ["mars", "jupiter"],
+      "theme": "行動と拡大",
+      "interpretation": "意欲や行動力を大きな目標に向け、可能性を広げること。",
+      "keywords": ["挑戦", "意欲", "拡大"]
+    },
+    "mars_saturn": {
+      "planets": ["mars", "saturn"],
+      "theme": "行動と忍耐",
+      "interpretation": "行動力に計画性や持続力を加え、着実に進めること。",
+      "keywords": ["努力", "忍耐", "持続力"]
+    },
+    "mars_uranus": {
+      "planets": ["mars", "uranus"],
+      "theme": "行動と変革",
+      "interpretation": "現状を変えるために、新しい行動や方法を試すこと。",
+      "keywords": ["独立心", "変革", "決断"]
+    },
+    "mars_neptune": {
+      "planets": ["mars", "neptune"],
+      "theme": "行動と理想",
+      "interpretation": "理想や直感を行動に移す際に、目的や手順を明確にすること。",
+      "keywords": ["理想", "献身", "方向性"]
+    },
+    "mars_pluto": {
+      "planets": ["mars", "pluto"],
+      "theme": "行動と変容",
+      "interpretation": "強い意志や集中力を、根本的な変化に向けて活かすこと。",
+      "keywords": ["集中力", "意志", "変革"]
+    },
+    "jupiter_saturn": {
+      "planets": ["jupiter", "saturn"],
+      "theme": "拡大と制限",
+      "interpretation": "成長を目指す気持ちと、現実的な責任や限界とのバランス。",
+      "keywords": ["発展", "現実性", "長期計画"]
+    },
+    "jupiter_uranus": {
+      "planets": ["jupiter", "uranus"],
+      "theme": "発展と革新",
+      "interpretation": "新しい考え方や変化を通じて、可能性を広げること。",
+      "keywords": ["自由", "革新", "発展"]
+    },
+    "jupiter_neptune": {
+      "planets": ["jupiter", "neptune"],
+      "theme": "成長と理想",
+      "interpretation": "希望や理想を大切にしながら、広い視野で可能性を考えること。",
+      "keywords": ["信念", "理想", "精神性"]
+    },
+    "jupiter_pluto": {
+      "planets": ["jupiter", "pluto"],
+      "theme": "発展と変容",
+      "interpretation": "大きな目標や信念を見直し、価値観の変化を成長につなげること。",
+      "keywords": ["影響力", "信念", "変容"]
+    },
+    "saturn_uranus": {
+      "planets": ["saturn", "uranus"],
+      "theme": "安定と変化",
+      "interpretation": "これまでの仕組みを守ることと、新しい方法を取り入れることの両立。",
+      "keywords": ["改革", "安定", "現実性"]
+    },
+    "saturn_neptune": {
+      "planets": ["saturn", "neptune"],
+      "theme": "現実と理想",
+      "interpretation": "理想や夢を現実的な計画に落とし込むこと。",
+      "keywords": ["責任", "理想", "具体化"]
+    },
+    "saturn_pluto": {
+      "planets": ["saturn", "pluto"],
+      "theme": "責任と根本的変化",
+      "interpretation": "古い仕組みや長期的な課題を見直し、必要な変化に取り組むこと。",
+      "keywords": ["再構築", "忍耐", "根本的変化"]
+    },
+    "uranus_neptune": {
+      "planets": ["uranus", "neptune"],
+      "theme": "革新と理想",
+      "interpretation": "新しい発想や感受性を通じて、未来への理想を描くこと。",
+      "keywords": ["想像力", "革新", "理想"]
+    },
+    "uranus_pluto": {
+      "planets": ["uranus", "pluto"],
+      "theme": "革新と変容",
+      "interpretation": "社会や価値観の大きな変化に気づき、新しい方向を探ること。",
+      "keywords": ["変革", "再生", "独立"]
+    },
+    "neptune_pluto": {
+      "planets": ["neptune", "pluto"],
+      "theme": "理想と深い変容",
+      "interpretation": "目に見えない価値観や理想の変化を通じて、物事の本質を見つめること。",
+      "keywords": ["精神性", "変容", "集合的意識"]
+    }
+  }
+}
