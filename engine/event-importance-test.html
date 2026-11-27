@@ -1,1 +1,440 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>イベント重要度比較テスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    button, input {
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    pre {
+      background: #f3f3f3;
+      padding: 16px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .success { color: green; }
+    .error { color: red; }
+
+    .note {
+      background: #f3f3f3;
+      padding: 12px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>イベント重要度比較テスト</h1>
+
+  <p>
+    アスペクトイベントの前後15分間で、
+    12星座×4カテゴリの運勢スコアがどれくらい変化するかを調べます。
+  </p>
+
+  <div class="note">
+    このテストでは、影響度と好調度の変化を別々に比較します。
+    まだ重要度の合格基準は設定しません。
+  </div>
+
+  <p>
+    <label for="test-date">調査する日付：</label>
+    <input type="date" id="test-date">
+  </p>
+
+  <button id="run-test">比較テストを実行</button>
+
+  <h2>実行結果</h2>
+  <div id="status">まだ実行されていません。</div>
+  <pre id="result"></pre>
+
+  <script src="../astronomy/astronomy.browser.min.js"></script>
+  <script src="./position-calculator.js"></script>
+  <script src="./aspect-detector.js"></script>
+
+  <script type="module">
+    import { buildScheduleBase } from "./schedule-engine.js";
+    import { buildFortuneData } from "./fortune-engine.js";
+    import { loadConfigs } from "./config-loader.js";
+
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
+    const dateInput = document.getElementById("test-date");
+
+    const PLANET_NAMES = [
+      "sun", "moon", "mercury", "venus", "mars",
+      "jupiter", "saturn", "uranus", "neptune", "pluto"
+    ];
+
+    const CATEGORIES = [
+      "overall", "love", "money", "work"
+    ];
+
+    const SIGN_NAMES = [
+      "牡羊座", "牡牛座", "双子座", "蟹座",
+      "獅子座", "乙女座", "天秤座", "蠍座",
+      "射手座", "山羊座", "水瓶座", "魚座"
+    ];
+
+    const PROBE_MINUTES = 15;
+
+    function formatLocalDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    }
+
+    dateInput.value = formatLocalDate(new Date());
+
+    function getCachedPosition(date, cache) {
+      const timestamp = date.getTime();
+
+      if (!cache.has(timestamp)) {
+        cache.set(
+          timestamp,
+          window.PositionCalculator.calculatePositions(date)
+        );
+      }
+
+      return cache.get(timestamp);
+    }
+
+    function detectAspectsAt(date, configs, cache) {
+      const positions = getCachedPosition(date, cache);
+
+      const futureDate = new Date(
+        date.getTime() + 60 * 60 * 1000
+      );
+
+      const futurePositions = getCachedPosition(
+        futureDate,
+        cache
+      );
+
+      const aspects = [];
+
+      for (let i = 0; i < PLANET_NAMES.length; i++) {
+        for (let j = i + 1; j < PLANET_NAMES.length; j++) {
+          const planetA = PLANET_NAMES[i];
+          const planetB = PLANET_NAMES[j];
+
+          const currentA =
+            positions.planets[planetA].longitude;
+
+          const currentB =
+            positions.planets[planetB].longitude;
+
+          const futureA =
+            futurePositions.planets[planetA].longitude;
+
+          const futureB =
+            futurePositions.planets[planetB].longitude;
+
+          const detected =
+            window.AspectDetector.detectAspect(
+              currentA,
+              currentB
+            );
+
+          if (!detected) continue;
+
+          const applying =
+            window.AspectDetector.detectApplying(
+              currentA,
+              currentB,
+              futureA,
+              futureB,
+              detected.aspectType
+            );
+
+          if (applying === null || applying === undefined) {
+            continue;
+          }
+
+          aspects.push({
+            planetA,
+            planetB,
+            aspectType: detected.aspectType,
+            orb: detected.orb,
+            applying
+          });
+        }
+      }
+
+      return {
+        positions,
+        aspects
+      };
+    }
+
+    function calculateScores(date, configs, cache) {
+      const detected = detectAspectsAt(
+        date,
+        configs,
+        cache
+      );
+
+      return buildFortuneData(
+        detected.aspects,
+        detected.positions,
+        configs
+      );
+    }
+
+    function compareEvent(event, configs, cache) {
+      const eventTime = new Date(event.exactTime);
+
+      const beforeTime = new Date(
+        eventTime.getTime() - PROBE_MINUTES * 60 * 1000
+      );
+
+      const afterTime = new Date(
+        eventTime.getTime() + PROBE_MINUTES * 60 * 1000
+      );
+
+      const beforeData = calculateScores(
+        beforeTime,
+        configs,
+        cache
+      );
+
+      const afterData = calculateScores(
+        afterTime,
+        configs,
+        cache
+      );
+
+      const comparisons = [];
+
+      for (let signIndex = 0; signIndex < 12; signIndex++) {
+        const beforeSign = beforeData.scores[signIndex];
+        const afterSign = afterData.scores[signIndex];
+
+        for (const category of CATEGORIES) {
+          const beforeScore =
+            beforeSign.categories[category];
+
+          const afterScore =
+            afterSign.categories[category];
+
+          const influenceChange = Math.abs(
+            afterScore.influence - beforeScore.influence
+          );
+
+          const favorabilityChange = Math.abs(
+            afterScore.favorability -
+            beforeScore.favorability
+          );
+
+          comparisons.push({
+            sign: SIGN_NAMES[signIndex],
+            category,
+            beforeInfluence: beforeScore.influence,
+            afterInfluence: afterScore.influence,
+            influenceChange: Number(
+              influenceChange.toFixed(1)
+            ),
+            beforeFavorability: beforeScore.favorability,
+            afterFavorability: afterScore.favorability,
+            favorabilityChange: Number(
+              favorabilityChange.toFixed(1)
+            )
+          });
+        }
+      }
+
+      const maxInfluence = comparisons.reduce(
+        (max, item) =>
+          item.influenceChange > max.influenceChange
+            ? item
+            : max,
+        comparisons[0]
+      );
+
+      const maxFavorability = comparisons.reduce(
+        (max, item) =>
+          item.favorabilityChange > max.favorabilityChange
+            ? item
+            : max,
+        comparisons[0]
+      );
+
+      return {
+        eventId: event.id,
+        planetA: event.planetA,
+        planetB: event.planetB,
+        aspectType: event.aspectType,
+        exactTime: event.exactTime,
+        beforeTime: beforeTime.toISOString(),
+        afterTime: afterTime.toISOString(),
+        comparisonCount: comparisons.length,
+        maxInfluenceChange: maxInfluence.influenceChange,
+        maxInfluenceTarget: {
+          sign: maxInfluence.sign,
+          category: maxInfluence.category
+        },
+        maxFavorabilityChange:
+          maxFavorability.favorabilityChange,
+        maxFavorabilityTarget: {
+          sign: maxFavorability.sign,
+          category: maxFavorability.category
+        },
+        comparisons
+      };
+    }
+
+    document
+      .getElementById("run-test")
+      .addEventListener("click", async () => {
+        try {
+          status.className = "";
+          status.textContent = "計算中...";
+          result.textContent = "";
+
+          const selectedDate = dateInput.value;
+
+          if (!selectedDate) {
+            throw new Error("調査する日付を選択してください。");
+          }
+
+          const [year, month, day] = selectedDate
+            .split("-")
+            .map(Number);
+
+          const startTime = new Date(year, month - 1, day);
+          const endTime = new Date(year, month - 1, day + 1);
+
+          const configs = await loadConfigs();
+
+          const positionCache = new Map();
+
+          const calculatePositions = date =>
+            getCachedPosition(date, positionCache);
+
+          // 1日分のイベントを検出する
+          const schedule = buildScheduleBase(
+            startTime,
+            endTime,
+            calculatePositions,
+            window.AspectDetector,
+            configs
+          );
+
+          const events = schedule.events;
+
+          if (events.length === 0) {
+            status.className = "success";
+            status.textContent =
+              "テスト完了：この日に比較対象のイベントはありません。";
+
+            result.textContent = JSON.stringify({
+              date: selectedDate,
+              eventCount: 0,
+              message: "イベントが見つかりませんでした。"
+            }, null, 2);
+
+            return;
+          }
+
+          const comparisons = [];
+
+          for (let i = 0; i < events.length; i++) {
+            status.textContent =
+              `イベント比較中... ${i + 1} / ${events.length}`;
+
+            const comparison = compareEvent(
+              events[i],
+              configs,
+              positionCache
+            );
+
+            comparisons.push(comparison);
+          }
+
+          const sortedByInfluence = [...comparisons].sort(
+            (a, b) =>
+              b.maxInfluenceChange - a.maxInfluenceChange
+          );
+
+          const sortedByFavorability = [...comparisons].sort(
+            (a, b) =>
+              b.maxFavorabilityChange -
+              a.maxFavorabilityChange
+          );
+
+          const averageInfluenceChange =
+            comparisons.reduce(
+              (total, item) =>
+                total + item.maxInfluenceChange,
+              0
+            ) / comparisons.length;
+
+          const averageFavorabilityChange =
+            comparisons.reduce(
+              (total, item) =>
+                total + item.maxFavorabilityChange,
+              0
+            ) / comparisons.length;
+
+          const output = {
+            date: selectedDate,
+            probeMinutesBeforeAndAfter: PROBE_MINUTES,
+            eventCount: events.length,
+            comparisonCountPerEvent: 48,
+            averageOfMaximumChanges: {
+              influence: Number(
+                averageInfluenceChange.toFixed(2)
+              ),
+              favorability: Number(
+                averageFavorabilityChange.toFixed(2)
+              )
+            },
+            largestInfluenceChanges:
+              sortedByInfluence.slice(0, 10),
+            largestFavorabilityChanges:
+              sortedByFavorability.slice(0, 10),
+            allEventComparisons: comparisons,
+            positionCalculationCount: positionCache.size
+          };
+
+          status.className = "success";
+          status.textContent =
+            `比較テスト完了！ ${events.length}件のイベントを調べました。`;
+
+          result.textContent = JSON.stringify(
+            output,
+            null,
+            2
+          );
+
+        } catch (error) {
+          status.className = "error";
+          status.textContent = "エラーが発生しました。";
+          result.textContent =
+            error.stack || error.message;
+        }
+      });
+  </script>
+
+</body>
+</html>
