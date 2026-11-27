@@ -1,1 +1,187 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interpretation Engine Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .pass { color: green; }
+    .fail { color: red; }
+    pre {
+      white-space: pre-wrap;
+      background: #f5f5f5;
+      padding: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>占星術解釈エンジン テスト</h1>
+  <p id="status">テスト準備中...</p>
+  <div id="results"></div>
+  <h2>解釈結果</h2>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import {
+      interpretAspect,
+      interpretAspects
+    } from "./interpretation-engine.js";
+
+    const results = document.getElementById("results");
+    const status = document.getElementById("status");
+    const output = document.getElementById("output");
+
+    let passed = 0;
+    let failed = 0;
+
+    function test(name, callback) {
+      const item = document.createElement("p");
+
+      try {
+        callback();
+        passed++;
+        item.className = "pass";
+        item.textContent = "PASS: " + name;
+      } catch (error) {
+        failed++;
+        item.className = "fail";
+        item.textContent = "FAIL: " + name + " - " + error.message;
+      }
+
+      results.appendChild(item);
+    }
+
+    function assert(condition, message) {
+      if (!condition) {
+        throw new Error(message);
+      }
+    }
+
+    async function runTests() {
+      try {
+        const [interpretationRules, planetCombinations] =
+          await Promise.all([
+            fetch("../config/interpretation-rules.json").then(response => {
+              if (!response.ok) throw new Error("interpretation-rules.json を読み込めません");
+              return response.json();
+            }),
+            fetch("../config/planet-combinations.json").then(response => {
+              if (!response.ok) throw new Error("planet-combinations.json を読み込めません");
+              return response.json();
+            })
+          ]);
+
+        const configs = {
+          interpretationRules,
+          planetCombinations
+        };
+
+        const firstAspect = {
+          planetA: "moon",
+          planetB: "venus",
+          aspectType: "trine"
+        };
+
+        const secondAspect = {
+          planetA: "sun",
+          planetB: "saturn",
+          aspectType: "square"
+        };
+
+        test("月と金星のトラインを解釈できる", () => {
+          const result = interpretAspect(firstAspect, configs);
+
+          assert(result.theme === "感情と愛情", "テーマが一致しません");
+          assert(result.aspectTheme === "調和・自然な流れ", "アスペクトのテーマが一致しません");
+          assert(result.opportunity.length > 0, "機会の説明がありません");
+        });
+
+        test("太陽と土星のスクエアを解釈できる", () => {
+          const result = interpretAspect(secondAspect, configs);
+
+          assert(result.theme === "自己実現と責任", "テーマが一致しません");
+          assert(result.aspectTheme === "葛藤・調整", "アスペクトのテーマが一致しません");
+          assert(result.caution.length > 0, "注意点の説明がありません");
+        });
+
+        test("天体の順番を逆にしても同じ解釈になる", () => {
+          const normal = interpretAspect(firstAspect, configs);
+          const reversed = interpretAspect({
+            planetA: "venus",
+            planetB: "moon",
+            aspectType: "trine"
+          }, configs);
+
+          assert(
+            normal.theme === reversed.theme &&
+            normal.combinationInterpretation === reversed.combinationInterpretation,
+            "天体の順番によって解釈が変わっています"
+          );
+        });
+
+        test("未登録の天体の組み合わせはエラーになる", () => {
+          let threw = false;
+
+          try {
+            interpretAspect({
+              planetA: "moon",
+              planetB: "unknown",
+              aspectType: "trine"
+            }, configs);
+          } catch (error) {
+            threw = true;
+          }
+
+          assert(threw, "エラーが発生しませんでした");
+        });
+
+        test("未登録のアスペクトはエラーになる", () => {
+          let threw = false;
+
+          try {
+            interpretAspect({
+              planetA: "moon",
+              planetB: "venus",
+              aspectType: "unknown"
+            }, configs);
+          } catch (error) {
+            threw = true;
+          }
+
+          assert(threw, "エラーが発生しませんでした");
+        });
+
+        test("複数のアスペクトをまとめて解釈できる", () => {
+          const results = interpretAspects(
+            [firstAspect, secondAspect],
+            configs
+          );
+
+          assert(results.length === 2, "解釈結果が2件ではありません");
+        });
+
+        const sample = interpretAspect(firstAspect, configs);
+        output.textContent = JSON.stringify(sample, null, 2);
+
+      } catch (error) {
+        failed++;
+        const item = document.createElement("p");
+        item.className = "fail";
+        item.textContent = "テスト準備エラー: " + error.message;
+        results.appendChild(item);
+      }
+
+      status.textContent =
+        `結果：${passed}件成功 / ${failed}件失敗`;
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
