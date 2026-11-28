@@ -45,6 +45,43 @@ const CATEGORY_LABELS = {
   work: "仕事運"
 };
 
+// ハウスが象徴する日常生活のテーマ
+const HOUSE_THEMES = {
+  1: "自分自身・行動・自己表現",
+  2: "お金・所有物・価値観",
+  3: "会話・学習・身近な人",
+  4: "家庭・居場所・心の基盤",
+  5: "恋愛・楽しみ・創造性",
+  6: "仕事・習慣・日々の管理",
+  7: "対人関係・パートナーシップ",
+  8: "共有財産・深い関係・変化",
+  9: "学び・探求・視野の広がり",
+  10: "社会的役割・キャリア・目標",
+  11: "友人・仲間・将来の希望",
+  12: "休息・内省・心の整理"
+};
+
+// カテゴリーごとのハウスの重要度
+const CATEGORY_HOUSE_WEIGHTS = {
+  overall: {
+    1: 1.0, 2: 0.8, 3: 0.8, 4: 1.0,
+    5: 1.0, 6: 0.9, 7: 0.9, 8: 0.9,
+    9: 0.8, 10: 1.0, 11: 0.9, 12: 0.8
+  },
+  love: {
+    1: 0.7, 2: 0.7, 4: 0.8, 5: 1.3,
+    7: 1.2, 8: 1.1, 11: 0.8
+  },
+  money: {
+    2: 1.3, 6: 0.8, 8: 1.2,
+    10: 1.0, 11: 0.9
+  },
+  work: {
+    2: 0.8, 3: 0.8, 6: 1.3,
+    9: 0.7, 10: 1.3, 11: 0.9
+  }
+};
+
 function validateInterpretations(interpretations) {
   if (!Array.isArray(interpretations)) {
     throw new TypeError("interpretations must be an array");
@@ -76,6 +113,77 @@ function getCategoryRelevance(item, category) {
   );
 
   return planetScore + keywordScore;
+}
+
+function getHouseContexts(item, signHouses) {
+  return item.planets.map(planet => {
+    const planetData = signHouses.planets[planet];
+
+    if (!planetData || !Number.isInteger(planetData.house)) {
+      throw new Error(`Invalid house data for planet: ${planet}`);
+    }
+
+    return {
+      planet,
+      house: planetData.house,
+      theme: HOUSE_THEMES[planetData.house]
+    };
+  });
+}
+
+function getHouseRelevance(houseContexts, category) {
+  const weights = CATEGORY_HOUSE_WEIGHTS[category];
+
+  return houseContexts.reduce(
+    (total, context) => total + (weights[context.house] || 0),
+    0
+  );
+}
+
+function buildSignCategoryAdvice(
+  interpretations,
+  signHouses,
+  category
+) {
+  const ranked = interpretations
+    .map(item => {
+      const houseContexts = getHouseContexts(item, signHouses);
+
+      const planetRelevance = getCategoryRelevance(
+        item,
+        category
+      );
+
+      const houseRelevance = getHouseRelevance(
+        houseContexts,
+        category
+      );
+
+      return {
+        interpretation: item,
+        houseContexts,
+        relevance: planetRelevance + houseRelevance
+      };
+    })
+    .filter(item => item.relevance > 0)
+    .sort((a, b) => b.relevance - a.relevance);
+
+  return {
+    category,
+    label: CATEGORY_LABELS[category],
+    themes: ranked.map(item => ({
+      planets: item.interpretation.planets,
+      aspectType: item.interpretation.aspectType,
+      theme: item.interpretation.theme,
+      interpretation: item.interpretation.combinationInterpretation,
+      aspectInterpretation: item.interpretation.aspectInterpretation,
+      opportunity: item.interpretation.opportunity,
+      caution: item.interpretation.caution,
+      keywords: item.interpretation.keywords,
+      houseContexts: item.houseContexts,
+      relevance: Number(item.relevance.toFixed(2))
+    }))
+  };
 }
 
 export function buildCategoryAdviceData(interpretations) {
@@ -112,12 +220,12 @@ export function buildCategoryAdviceData(interpretations) {
   return categories;
 }
 
-export function buildAdviceData(interpretations) {
+export function buildAdviceData(interpretations, houses = null) {
   validateInterpretations(interpretations);
 
   const categories = buildCategoryAdviceData(interpretations);
 
-  return {
+  const result = {
     categories,
     summary: {
       interpretationCount: interpretations.length,
@@ -125,5 +233,37 @@ export function buildAdviceData(interpretations) {
       categories: Object.keys(categories)
     }
   };
-}
 
+  // 12星座ごとの個別アドバイスデータを作成
+  if (houses !== null) {
+    const signs = {};
+
+    for (let signIndex = 0; signIndex < 12; signIndex++) {
+      const signHouses = houses[signIndex];
+
+      if (!signHouses || !signHouses.planets) {
+        throw new Error(`Missing house data for sign: ${signIndex}`);
+      }
+
+      const signCategories = {};
+
+      for (const category of Object.keys(CATEGORY_LABELS)) {
+        signCategories[category] = buildSignCategoryAdvice(
+          interpretations,
+          signHouses,
+          category
+        );
+      }
+
+      signs[signIndex] = {
+        signIndex,
+        categories: signCategories
+      };
+    }
+
+    result.signs = signs;
+    result.summary.signCount = 12;
+  }
+
+  return result;
+}
